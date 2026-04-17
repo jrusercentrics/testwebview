@@ -191,14 +191,33 @@ function go() {
   // Build iframe content
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 ${withSession ? `<script>
-window.UC_UI_USER_SESSION_DATA = ${JSON.stringify({
-  controllerId: controllerId,
-  consent: { status: "ALL_ACCEPTED", timestamp: Date.now(), services: [] },
-  settingsId: settingsId,
-  source: "native_sdk"
-})};
+// Simula o JavaScriptInterface que o SDK nativo injeta no WebView
+// Conforme docs: webView.addJavascriptInterface(..., "ucMobileSdk")
+var __sessionData = JSON.stringify({
+  consents: [
+    {status: true, templateId: "SkPc5EjOsWm", timestamp: ${Date.now()}},
+    {status: true, templateId: "F-REmjGq7", timestamp: ${Date.now()}},
+    {status: true, templateId: "H1Vl5NidjWX", timestamp: ${Date.now()}},
+    {status: false, templateId: "J39GyuWQq", timestamp: ${Date.now()}}
+  ],
+  controllerId: "${controllerId}",
+  language: "en",
+  tcf: null,
+  ccpa: null
+});
+window.ucMobileSdk = {
+  getUserSessionData: function() {
+    parent.postMessage({t:'log',m:'ucMobileSdk.getUserSessionData() called by CMP'},'*');
+    return __sessionData;
+  },
+  getSessionData: function() {
+    parent.postMessage({t:'log',m:'ucMobileSdk.getSessionData() called by CMP'},'*');
+    return __sessionData;
+  }
+};
 window.__injectedCtrlId = "${controllerId}";
-parent.postMessage({t:'log',m:'UC_UI_USER_SESSION_DATA set before CMP load'},'*');
+parent.postMessage({t:'log',m:'ucMobileSdk interface injected with controllerId=${controllerId.substring(0,20)}...'},'*');
+parent.postMessage({t:'log',m:'Session data: ' + __sessionData.substring(0,120) + '...'},'*');
 <\/script>` : `<script>window.__injectedCtrlId = "";<\/script>`}
 </head><body style="margin:0">
 <script>
