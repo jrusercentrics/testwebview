@@ -3,847 +3,621 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CDCS Cross-Device Test v2</title>
+    <title>CDCS Test v3 — CMP V2 Browser UI</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
-
         :root {
-            --bg: #0a0c10;
-            --surface: #13161c;
-            --surface-2: #1a1e26;
-            --border: #262c36;
-            --text: #d4dae4;
-            --text-dim: #6b7588;
-            --blue: #4da0ff;
-            --blue-bg: rgba(77,160,255,0.08);
-            --green: #34d399;
-            --green-bg: rgba(52,211,153,0.08);
-            --red: #f87171;
-            --red-bg: rgba(248,113,113,0.08);
-            --amber: #fbbf24;
-            --amber-bg: rgba(251,191,36,0.08);
-            --mono: 'IBM Plex Mono', monospace;
-            --sans: 'Outfit', sans-serif;
+            --bg: #0a0c10; --surface: #13161c; --surface-2: #1a1e26; --border: #262c36;
+            --text: #d4dae4; --text-dim: #6b7588;
+            --blue: #4da0ff; --blue-bg: rgba(77,160,255,0.08);
+            --green: #34d399; --green-bg: rgba(52,211,153,0.08);
+            --red: #f87171; --red-bg: rgba(248,113,113,0.08);
+            --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.08);
+            --mono: 'IBM Plex Mono', monospace; --sans: 'Outfit', sans-serif;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 24px; max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .version { font-family: var(--mono); font-size: 11px; color: var(--text-dim); background: var(--surface-2); padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+        .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; line-height: 1.6; margin-top: 6px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+        .card h2 { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+        label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-family: var(--mono); }
+        input, select { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 10px; }
+        input:focus { border-color: var(--blue); }
+        input::placeholder { color: #3a4050; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: var(--blue); color: var(--bg); }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+        .log { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0; max-height: 600px; overflow-y: auto; margin-top: 12px; }
+        .log-entry { padding: 6px 14px; font-family: var(--mono); font-size: 11px; line-height: 1.6; border-bottom: 1px solid rgba(38,44,54,0.4); word-break: break-word; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-entry.ok { color: var(--green); background: var(--green-bg); }
+        .log-entry.fail { color: var(--red); background: var(--red-bg); }
+        .log-entry.warn { color: var(--amber); background: var(--amber-bg); }
+        .log-entry.info { color: var(--blue); }
+        .log-entry .ts { color: #3a4050; margin-right: 6px; }
+        .summary { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 16px; }
+        .summary pre { font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
-        body {
-            font-family: var(--sans);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 32px 24px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .title-bar {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .title-bar h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-
-        .title-bar .version {
-            font-family: var(--mono);
-            font-size: 11px;
-            color: var(--text-dim);
-            background: var(--surface-2);
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
-
-        .subtitle {
-            color: var(--text-dim);
-            font-size: 13px;
-            margin-bottom: 28px;
-            line-height: 1.6;
-        }
-
-        /* ── Input area ── */
-        .input-area {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .input-area h2 {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 14px;
-        }
-
-        .pair-row {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr auto;
-            gap: 8px;
-            align-items: end;
-            margin-bottom: 8px;
-        }
-
-        .pair-row label {
-            display: block;
-            font-size: 11px;
-            font-weight: 500;
-            color: var(--text-dim);
-            margin-bottom: 4px;
-            font-family: var(--mono);
-        }
-
-        .pair-row input {
-            width: 100%;
-            padding: 8px 10px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 12px;
-            outline: none;
-        }
-
-        .pair-row input:focus { border-color: var(--blue); }
-        .pair-row input::placeholder { color: #3a4050; }
-
-        .pair-row .arrow {
-            color: var(--text-dim);
-            font-size: 18px;
-            padding-bottom: 6px;
-            text-align: center;
-        }
-
-        .pair-row .btn-remove {
-            padding: 8px;
-            background: none;
-            border: 1px solid transparent;
-            color: var(--text-dim);
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .pair-row .btn-remove:hover { color: var(--red); border-color: var(--red); }
-
-        .add-pair {
-            font-size: 12px;
-            color: var(--blue);
-            background: none;
-            border: 1px dashed var(--border);
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 8px;
-            font-family: var(--sans);
-        }
-
-        .add-pair:hover { border-color: var(--blue); }
-
-        .run-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        .btn-run {
-            padding: 10px 24px;
-            background: var(--blue);
-            color: var(--bg);
-            border: none;
-            border-radius: 6px;
-            font-family: var(--sans);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-run:hover { opacity: 0.85; }
-        .btn-run:disabled { opacity: 0.3; cursor: not-allowed; }
-
-        .global-status {
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--text-dim);
-        }
-
-        /* ── Test cards ── */
-        .results-area {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .test-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow: hidden;
-            transition: border-color 0.3s;
-        }
-
-        .test-card.running { border-color: var(--blue); }
-        .test-card.pass { border-color: var(--green); }
-        .test-card.fail { border-color: var(--red); }
-        .test-card.warn { border-color: var(--amber); }
-
-        .test-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .test-card-header .pair-label {
-            font-family: var(--mono);
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .pair-label .dim { color: var(--text-dim); }
-
-        .verdict {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            padding: 3px 10px;
-            border-radius: 4px;
-        }
-
-        .verdict.running { color: var(--blue); background: var(--blue-bg); }
-        .verdict.pass { color: var(--green); background: var(--green-bg); }
-        .verdict.fail { color: var(--red); background: var(--red-bg); }
-        .verdict.warn { color: var(--amber); background: var(--amber-bg); }
-        .verdict.queued { color: var(--text-dim); background: var(--surface-2); }
-
-        .test-steps {
-            padding: 0;
-            list-style: none;
-        }
-
-        .test-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 8px 18px;
-            font-size: 12px;
-            font-family: var(--mono);
-            line-height: 1.5;
-            border-bottom: 1px solid rgba(38,44,54,0.5);
-            min-height: 32px;
-        }
-
-        .test-step:last-child { border-bottom: none; }
-
-        .step-icon {
-            flex-shrink: 0;
-            width: 16px;
-            text-align: center;
-            font-size: 12px;
-            line-height: 20px;
-        }
-
-        .step-icon.pending { color: var(--text-dim); }
-        .step-icon.running { color: var(--blue); }
-        .step-icon.ok { color: var(--green); }
-        .step-icon.fail { color: var(--red); }
-        .step-icon.warn { color: var(--amber); }
-        .step-icon.info { color: var(--blue); }
-
-        .step-text { flex: 1; word-break: break-word; }
-        .step-text .detail {
-            color: var(--text-dim);
-            font-size: 11px;
-            display: block;
-            margin-top: 2px;
-        }
-        .step-text .error-detail {
-            color: var(--red);
-            font-size: 11px;
-            display: block;
-            margin-top: 2px;
-        }
-
-        .net-section {
-            padding: 12px 18px;
-            border-top: 1px solid var(--border);
-        }
-
-        .net-section summary {
-            font-size: 11px;
-            color: var(--text-dim);
-            cursor: pointer;
-            font-family: var(--mono);
-        }
-
-        .net-log {
-            margin-top: 8px;
-            font-family: var(--mono);
-            font-size: 11px;
-            line-height: 1.6;
-            color: var(--text-dim);
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .net-log .req { padding: 3px 0; border-bottom: 1px solid rgba(38,44,54,0.3); word-break: break-all; }
-        .net-log .req.error { color: var(--red); }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .summary-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 16px;
-        }
-
-        .summary-card h2 {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .summary-card pre {
-            font-family: var(--mono);
-            font-size: 12px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
+        /* Hide the UC banner UI that will appear */
+        #uc-banner-holder, .uc-banner-holder, [id*="usercentrics"] { /* Don't hide - we need it to work */ }
     </style>
 </head>
 <body>
 
-<div class="title-bar">
-    <h1>CDCS Cross-Device Test</h1>
-    <span class="version">v2 — Browser SDK 2.12.1</span>
+<div style="display:flex;align-items:baseline;">
+    <h1>CDCS Test v3</h1>
+    <span class="version">CMP V2 Browser UI + Browser SDK</span>
 </div>
 <p class="subtitle">
-    Tests cross-device consent sharing between two <strong>different</strong> Settings IDs (simulating mobile → web).<br>
-    Device A: init + accept all → capture controllerID.<br>
-    Device B: init with that controllerID on a different Settings ID → verify consent is restored and shouldCollectConsent is false.<br>
-    Respects the one-time restoration rule: each test pair uses a fresh controllerID.
+    This test uses the <strong>actual CMP V2 Browser UI</strong> (the production script tag with <code>data-controller-id</code>) 
+    to test CDCS — not just the Browser SDK. It also tests the Browser SDK for comparison.<br>
+    <strong>Flow:</strong> Device A gives consent → capture controllerID → clear everything → Device B loads CMP with that controllerID → check if banner appears.
 </p>
 
-<div class="input-area">
-    <h2>Test Pairs — Device A (source) → Device B (restore target)</h2>
-    <div id="pairsContainer">
-        <!-- Pairs injected by JS -->
+<div class="card">
+    <h2>Configuration</h2>
+    <div class="row">
+        <div>
+            <label>Device A — Settings ID (consent source)</label>
+            <input id="sidA" value="RISEiwKdT7LE2_" placeholder="e.g. 3V6ZqxlVhq8kAw" />
+        </div>
+        <div>
+            <label>Device B — Settings ID (restore target)</label>
+            <input id="sidB" value="RISEiwKdT7LE2_" placeholder="e.g. tIkRJxexTam6P8" />
+        </div>
     </div>
-    <button class="add-pair" onclick="addPairRow()">+ Add pair</button>
-    <div class="run-row">
-        <button class="btn-run" id="btnRun" onclick="runAllTests()">Run All Tests</button>
-        <span class="global-status" id="globalStatus"></span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="btnRun" onclick="runFullTest()">Run Full Test</button>
+        <span id="statusMsg" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:36px;"></span>
     </div>
 </div>
 
-<div class="results-area" id="resultsArea"></div>
+<div class="card">
+    <h2>Test Log</h2>
+    <div class="log" id="logArea">
+        <div class="log-entry" style="color:var(--text-dim);">Waiting to start...</div>
+    </div>
+</div>
+
 <div id="summaryArea"></div>
+
+<!-- Iframe sandbox for each test phase -->
+<iframe id="testFrame" style="width:1px;height:1px;position:fixed;left:-100px;top:-100px;border:none;"></iframe>
 
 <script>
     // ══════════════════════════════════════════════════
-    // Default pairs from the ticket: mobile → web
+    // We use iframes to get a truly clean environment
+    // for each phase — no localStorage bleed, no SDK
+    // instances lingering in memory.
     // ══════════════════════════════════════════════════
-    const DEFAULT_PAIRS = [
-        { a: '3V6ZqxlVhq8kAw', b: 'tIkRJxexTam6P8', label: "June's Journey: Mobile → Web (Facebook)" },
-        { a: '3V6ZqxlVhq8kAw', b: 'PIsxCtDSMLX4O1', label: "June's Journey: Mobile → Web" },
-        { a: '3V6ZqxlVhq8kAw', b: 'm6JGswqWVee2Ho', label: "June's Journey: Mobile → Web" },
-        { a: 'tIkRJxexTam6P8', b: 'tIkRJxexTam6P8', label: "June's Journey: Same ID (control test)" },
-    ];
 
-    let pairCount = 0;
+    function log(msg, type = '') {
+        const area = document.getElementById('logArea');
+        // Remove "waiting" placeholder
+        const placeholder = area.querySelector('.log-entry[style]');
+        if (placeholder) placeholder.remove();
 
-    function addPairRow(a = '', b = '', label = '') {
-        const c = document.getElementById('pairsContainer');
-        const id = pairCount++;
         const div = document.createElement('div');
-        div.className = 'pair-row';
-        div.id = `pair-${id}`;
-        div.innerHTML = `
-            <div>
-                ${id === 0 ? '<label>Device A (source)</label>' : ''}
-                <input type="text" id="pairA-${id}" value="${esc(a)}" placeholder="Mobile Settings ID" />
-            </div>
-            <div class="arrow">${id === 0 ? '<br>' : ''}→</div>
-            <div>
-                ${id === 0 ? '<label>Device B (restore)</label>' : ''}
-                <input type="text" id="pairB-${id}" value="${esc(b)}" placeholder="Web Settings ID" />
-            </div>
-            <button class="btn-remove" onclick="document.getElementById('pair-${id}').remove()">✕</button>
-        `;
-        c.appendChild(div);
+        div.className = `log-entry ${type}`;
+        const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        div.innerHTML = `<span class="ts">${ts}</span>${esc(msg)}`;
+        area.appendChild(div);
+        area.scrollTop = area.scrollHeight;
     }
 
-    DEFAULT_PAIRS.forEach(p => addPairRow(p.a, p.b));
-
-    // ══════════════════════════════════════════════════
-    // SDK loader
-    // ══════════════════════════════════════════════════
-    let sdkLoadPromise = null;
-
-    function loadSDK() {
-        if (sdkLoadPromise) return sdkLoadPromise;
-        sdkLoadPromise = new Promise((resolve, reject) => {
-            if (typeof UC_SDK !== 'undefined') { resolve(); return; }
-            const s = document.createElement('script');
-            s.src = 'https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js';
-            s.onload = () => resolve();
-            s.onerror = () => reject(new Error('Failed to load Browser SDK'));
-            document.head.appendChild(s);
-        });
-        return sdkLoadPromise;
-    }
-
-    // ══════════════════════════════════════════════════
-    // Network interceptor
-    // ══════════════════════════════════════════════════
-    function createNetInterceptor() {
-        const log = [];
-        const origFetch = window.fetch;
-        const intercepted = function (...args) {
-            const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-            const relevant = url.includes('consent') || url.includes('Consent');
-            if (relevant) {
-                const entry = { url, status: null, ok: null, error: null, ts: new Date().toLocaleTimeString('en-GB', { hour12: false }) };
-                log.push(entry);
-                return origFetch.apply(this, args).then(r => { entry.status = r.status; entry.ok = r.ok; return r; }).catch(e => { entry.error = e.message; throw e; });
-            }
-            return origFetch.apply(this, args);
-        };
-        return {
-            install() { window.fetch = intercepted; },
-            restore() { window.fetch = origFetch; },
-            getLog() { return log; }
-        };
-    }
-
-    // ══════════════════════════════════════════════════
-    // DOM helpers
-    // ══════════════════════════════════════════════════
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function createTestCard(pair, idx) {
-        const card = document.createElement('div');
-        card.className = 'test-card';
-        card.id = `card-${idx}`;
-        card.innerHTML = `
-            <div class="test-card-header">
-                <span class="pair-label">
-                    <span class="dim">A:</span> ${esc(pair.a)} <span class="dim">→ B:</span> ${esc(pair.b)}
-                </span>
-                <span class="verdict queued" id="verdict-${idx}">QUEUED</span>
-            </div>
-            <ul class="test-steps" id="steps-${idx}"></ul>
-            <div class="net-section">
-                <details><summary>Network log (consent-related requests)</summary>
-                <div class="net-log" id="netlog-${idx}">—</div></details>
-            </div>
-        `;
-        return card;
-    }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    function addStep(idx, icon, text, detail, isError) {
-        const ul = document.getElementById(`steps-${idx}`);
-        if (!ul) return;
-        const iconMap = { pending: '○', running: '◉', ok: '✓', fail: '✗', warn: '⚠', info: 'ℹ' };
-        const li = document.createElement('li');
-        li.className = 'test-step';
-        let html = `<span class="step-icon ${icon}">${iconMap[icon] || '○'}</span><span class="step-text">${esc(text)}`;
-        if (detail) html += `<span class="${isError ? 'error-detail' : 'detail'}">${esc(detail)}</span>`;
-        html += '</span>';
-        li.innerHTML = html;
-        ul.appendChild(li);
-        li.scrollIntoView({ block: 'nearest' });
-    }
+    // ══════════════════════════════════════════════════
+    // Run a function inside a fresh iframe
+    // This gives us isolated localStorage + clean JS env
+    // ══════════════════════════════════════════════════
+    function runInIframe(htmlContent, timeoutMs = 30000) {
+        return new Promise((resolve, reject) => {
+            const iframe = document.getElementById('testFrame');
+            const timer = setTimeout(() => {
+                reject(new Error(`Iframe timeout after ${timeoutMs / 1000}s`));
+            }, timeoutMs);
 
-    function setVerdict(idx, v) {
-        const el = document.getElementById(`verdict-${idx}`);
-        const card = document.getElementById(`card-${idx}`);
-        if (el) { el.className = `verdict ${v}`; el.textContent = v.toUpperCase(); }
-        if (card) { card.className = `test-card ${v}`; }
-    }
+            // Listen for message from iframe
+            const handler = (event) => {
+                if (event.source === iframe.contentWindow) {
+                    window.removeEventListener('message', handler);
+                    clearTimeout(timer);
+                    resolve(event.data);
+                }
+            };
+            window.addEventListener('message', handler);
 
-    function renderNetLog(idx, entries) {
-        const el = document.getElementById(`netlog-${idx}`);
-        if (!el) return;
-        if (!entries.length) { el.textContent = 'No consent-related requests captured.'; return; }
-        el.innerHTML = entries.map(e => {
-            const cls = (e.ok === false || e.error) ? 'error' : '';
-            const st = e.error ? `ERR: ${e.error}` : `${e.status}`;
-            const short = e.url.length > 120 ? e.url.substring(0, 120) + '…' : e.url;
-            return `<div class="req ${cls}">${e.ts} [${st}] ${short}</div>`;
-        }).join('');
+            // Write fresh content to iframe
+            iframe.srcdoc = htmlContent;
+        });
     }
 
     // ══════════════════════════════════════════════════
-    // Clear ALL UC storage
+    // Phase A: Load CMP V2 Browser UI, accept all,
+    // return controllerID + consents
     // ══════════════════════════════════════════════════
-    function nukeStorage() {
-        localStorage.clear();
-        // Also try sessionStorage
-        try { sessionStorage.clear(); } catch (e) {}
+    function buildPhaseA_BrowserUI(settingsId) {
+        return `<!DOCTYPE html><html><head>
+            <script id="usercentrics-cmp" data-settings-id="${settingsId}" 
+                src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
+        </head><body>
+        <script>
+            // Wait for UC_UI to be ready
+            window.addEventListener('UC_UI_INITIALIZED', function() {
+                try {
+                    // Accept all via the UC_UI API
+                    if (window.UC_UI && typeof UC_UI.acceptAllConsents === 'function') {
+                        UC_UI.acceptAllConsents();
+                    }
+
+                    // Give it a moment to process
+                    setTimeout(function() {
+                        var result = { phase: 'A_BrowserUI', success: true };
+
+                        // Get controller ID from localStorage
+                        var controllerId = null;
+                        for (var i = 0; i < localStorage.length; i++) {
+                            var key = localStorage.key(i);
+                            var val = localStorage.getItem(key);
+                            if (key && val && key.includes('controllerId')) {
+                                controllerId = val;
+                            }
+                            // Also check the UC cookie/storage format
+                            if (key && key.startsWith('uc_') && val) {
+                                try {
+                                    var parsed = JSON.parse(val);
+                                    if (parsed && parsed.controllerId) controllerId = parsed.controllerId;
+                                } catch(e) {}
+                            }
+                        }
+
+                        // Try UC_UI API
+                        if (!controllerId && window.UC_UI && typeof UC_UI.getControllerId === 'function') {
+                            controllerId = UC_UI.getControllerId();
+                        }
+
+                        result.controllerId = controllerId;
+
+                        // Get consents
+                        if (window.UC_UI && typeof UC_UI.getServicesBaseInfo === 'function') {
+                            var services = UC_UI.getServicesBaseInfo();
+                            result.consents = services.map(function(s) {
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            });
+                        }
+
+                        // Dump full localStorage for debugging
+                        result.localStorage = {};
+                        for (var i = 0; i < localStorage.length; i++) {
+                            var k = localStorage.key(i);
+                            result.localStorage[k] = localStorage.getItem(k).substring(0, 200);
+                        }
+
+                        window.parent.postMessage(result, '*');
+                    }, 3000);
+                } catch(err) {
+                    window.parent.postMessage({ phase: 'A_BrowserUI', success: false, error: err.message }, '*');
+                }
+            });
+
+            // Fallback if UC_UI never initializes
+            setTimeout(function() {
+                if (!window.UC_UI) {
+                    window.parent.postMessage({ phase: 'A_BrowserUI', success: false, error: 'UC_UI never initialized (timeout)' }, '*');
+                }
+            }, 25000);
+        <\/script>
+        </body></html>`;
     }
 
     // ══════════════════════════════════════════════════
-    // Single test: Device A → Device B
+    // Phase B: Load CMP V2 Browser UI WITH controller-id,
+    // check if banner appears or not
     // ══════════════════════════════════════════════════
-    async function runPairTest(pair, idx) {
-        const res = {
-            settingsA: pair.a,
-            settingsB: pair.b,
-            controllerIdA: null,
-            consentsA: [],
-            controllerIdB: null,
-            consentsB: [],
-            initialLayerB: null,
-            shouldCollectB: null,
-            consentMatch: null,
-            errors: [],
-            networkIssues: [],
-            verdict: 'unknown'
+    function buildPhaseB_BrowserUI(settingsId, controllerId) {
+        return `<!DOCTYPE html><html><head>
+            <script id="usercentrics-cmp" data-settings-id="${settingsId}" data-controller-id="${controllerId}"
+                src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
+        </head><body>
+        <script>
+            var networkLog = [];
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
+                if (url.includes('consent') || url.includes('Consent')) {
+                    var entry = { url: url, status: null };
+                    networkLog.push(entry);
+                    return origFetch.apply(this, arguments).then(function(r) { entry.status = r.status; return r; }).catch(function(e) { entry.status = 'ERR:' + e.message; throw e; });
+                }
+                return origFetch.apply(this, arguments);
+            };
+
+            // Also intercept XMLHttpRequest
+            var origXHROpen = XMLHttpRequest.prototype.open;
+            var origXHRSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._url = url;
+                return origXHROpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function() {
+                var self = this;
+                if (self._url && (self._url.includes('consent') || self._url.includes('Consent'))) {
+                    var entry = { url: self._url, status: null };
+                    networkLog.push(entry);
+                    self.addEventListener('load', function() { entry.status = self.status; });
+                    self.addEventListener('error', function() { entry.status = 'ERR'; });
+                }
+                return origXHRSend.apply(this, arguments);
+            };
+
+            window.addEventListener('UC_UI_INITIALIZED', function() {
+                setTimeout(function() {
+                    try {
+                        var result = { phase: 'B_BrowserUI', success: true };
+
+                        // Check if CMP wants to show banner
+                        result.isConsentRequired = false;
+                        if (window.UC_UI && typeof UC_UI.isConsentRequired === 'function') {
+                            result.isConsentRequired = UC_UI.isConsentRequired();
+                        }
+
+                        // Get controller ID
+                        if (window.UC_UI && typeof UC_UI.getControllerId === 'function') {
+                            result.controllerId = UC_UI.getControllerId();
+                        }
+
+                        // Get consents
+                        if (window.UC_UI && typeof UC_UI.getServicesBaseInfo === 'function') {
+                            var services = UC_UI.getServicesBaseInfo();
+                            result.consents = services.map(function(s) {
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            });
+                        }
+
+                        result.networkLog = networkLog;
+                        window.parent.postMessage(result, '*');
+                    } catch(err) {
+                        window.parent.postMessage({ phase: 'B_BrowserUI', success: false, error: err.message, networkLog: networkLog }, '*');
+                    }
+                }, 4000);
+            });
+
+            setTimeout(function() {
+                if (!window.UC_UI) {
+                    window.parent.postMessage({ phase: 'B_BrowserUI', success: false, error: 'UC_UI never initialized (timeout)', networkLog: networkLog }, '*');
+                }
+            }, 25000);
+        <\/script>
+        </body></html>`;
+    }
+
+    // ══════════════════════════════════════════════════
+    // Phase A via Browser SDK (for comparison)
+    // ══════════════════════════════════════════════════
+    function buildPhaseA_BrowserSDK(settingsId) {
+        return `<!DOCTYPE html><html><head>
+            <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js"><\/script>
+        </head><body><script>
+            try {
+                var UC = new UC_SDK.default('${settingsId}');
+                UC.init().then(function(initValues) {
+                    UC.acceptAllServices();
+                    setTimeout(function() {
+                        var settings = UC.getSettings();
+                        var services = UC.getServicesBaseInfo();
+                        window.parent.postMessage({
+                            phase: 'A_BrowserSDK',
+                            success: true,
+                            controllerId: settings.controllerId,
+                            consents: services.map(function(s) { 
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            }),
+                            initialLayer: initValues.initialLayer
+                        }, '*');
+                    }, 2000);
+                }).catch(function(err) {
+                    window.parent.postMessage({ phase: 'A_BrowserSDK', success: false, error: err.message }, '*');
+                });
+            } catch(err) {
+                window.parent.postMessage({ phase: 'A_BrowserSDK', success: false, error: err.message }, '*');
+            }
+        <\/script></body></html>`;
+    }
+
+    // ══════════════════════════════════════════════════
+    // Phase B via Browser SDK (for comparison)
+    // ══════════════════════════════════════════════════
+    function buildPhaseB_BrowserSDK(settingsId, controllerId) {
+        return `<!DOCTYPE html><html><head>
+            <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js"><\/script>
+        </head><body><script>
+            var networkLog = [];
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
+                if (url.includes('consent') || url.includes('Consent')) {
+                    var entry = { url: url, status: null };
+                    networkLog.push(entry);
+                    return origFetch.apply(this, arguments).then(function(r) { entry.status = r.status; return r; }).catch(function(e) { entry.status = 'ERR:' + e.message; throw e; });
+                }
+                return origFetch.apply(this, arguments);
+            };
+
+            try {
+                var UC = new UC_SDK.default('${settingsId}', { controllerId: '${controllerId}' });
+                UC.init().then(function(initValues) {
+                    setTimeout(function() {
+                        var settings = UC.getSettings();
+                        var services = UC.getServicesBaseInfo();
+                        window.parent.postMessage({
+                            phase: 'B_BrowserSDK',
+                            success: true,
+                            controllerId: settings.controllerId,
+                            consents: services.map(function(s) {
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            }),
+                            initialLayer: initValues.initialLayer,
+                            networkLog: networkLog
+                        }, '*');
+                    }, 2000);
+                }).catch(function(err) {
+                    window.parent.postMessage({ phase: 'B_BrowserSDK', success: false, error: err.message, networkLog: networkLog }, '*');
+                });
+            } catch(err) {
+                window.parent.postMessage({ phase: 'B_BrowserSDK', success: false, error: err.message, networkLog: networkLog }, '*');
+            }
+        <\/script></body></html>`;
+    }
+
+    // ══════════════════════════════════════════════════
+    // Main test runner
+    // ══════════════════════════════════════════════════
+    async function runFullTest() {
+        const btn = document.getElementById('btnRun');
+        const status = document.getElementById('statusMsg');
+        btn.disabled = true;
+        document.getElementById('logArea').innerHTML = '';
+        document.getElementById('summaryArea').innerHTML = '';
+
+        const sidA = document.getElementById('sidA').value.trim();
+        const sidB = document.getElementById('sidB').value.trim();
+
+        if (!sidA || !sidB) {
+            log('ERROR: Both Settings IDs are required.', 'fail');
+            btn.disabled = false;
+            return;
+        }
+
+        const report = {
+            settingsA: sidA, settingsB: sidB, timestamp: new Date().toISOString(),
+            browserUI: { phaseA: null, phaseB: null },
+            browserSDK: { phaseA: null, phaseB: null }
         };
 
-        const net = createNetInterceptor();
-        net.install();
+        // ────────────────────────────────────────
+        // TEST 1: CMP V2 Browser UI
+        // ────────────────────────────────────────
+        log('═══ TEST 1: CMP V2 Browser UI (production CMP script) ═══', 'info');
 
+        // Phase A
+        log(`[Browser UI] Phase A: Loading CMP for ${sidA}, will accept all...`);
+        status.textContent = 'Browser UI: Phase A...';
         try {
-            setVerdict(idx, 'running');
+            const resultA = await runInIframe(buildPhaseA_BrowserUI(sidA), 35000);
+            report.browserUI.phaseA = resultA;
 
-            // ── 1. Clean slate ──
-            addStep(idx, 'running', 'Clearing all storage...');
-            nukeStorage();
-            addStep(idx, 'ok', 'Storage cleared (localStorage + sessionStorage)');
-
-            // ── 2. Init Device A ──
-            addStep(idx, 'running', `Device A: Initializing SDK with ${pair.a}...`);
-            let ucA;
-            try {
-                ucA = new UC_SDK.default(pair.a);
-                const initA = await withTimeout(ucA.init(), 25000, 'Device A init timeout (25s)');
-                addStep(idx, 'ok', `Device A: SDK initialized`, `initialLayer: ${initA.initialLayer}`);
-            } catch (err) {
-                addStep(idx, 'fail', `Device A: Init failed`, err.message, true);
-                res.errors.push(`Device A init: ${err.message}`);
-                throw err;
-            }
-
-            // ── 3. Accept All on Device A ──
-            addStep(idx, 'running', 'Device A: Accepting all services...');
-            try {
-                ucA.acceptAllServices();
-                addStep(idx, 'ok', 'Device A: Accepted all services');
-            } catch (err) {
-                addStep(idx, 'fail', 'Device A: acceptAllServices failed', err.message, true);
-                res.errors.push(`Device A acceptAll: ${err.message}`);
-                throw err;
-            }
-
-            // ── 4. Read state from Device A ──
-            addStep(idx, 'running', 'Device A: Reading controllerID and consents...');
-            try {
-                const settings = ucA.getSettings();
-                res.controllerIdA = settings?.controllerId || null;
-
-                const services = ucA.getServicesBaseInfo();
-                res.consentsA = services.map(s => ({
-                    name: s.name,
-                    id: s.id,
-                    consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent
-                }));
-
-                addStep(idx, 'ok', 'Device A: State captured',
-                    `controllerID: ${res.controllerIdA}\nConsents: ${res.consentsA.map(s => s.name + '=' + s.consent).join(', ')}`);
-
-                if (!res.controllerIdA) {
-                    res.errors.push('Device A: no controllerID after acceptAll');
-                    throw new Error('No controllerID');
+            if (resultA.success && resultA.controllerId) {
+                log(`[Browser UI] Phase A OK — controllerID: ${resultA.controllerId}`, 'ok');
+                if (resultA.consents) {
+                    log(`[Browser UI] Phase A consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
                 }
-            } catch (err) {
-                if (!res.controllerIdA) {
-                    addStep(idx, 'fail', 'Device A: Failed to read state', err.message, true);
-                    throw err;
+                if (resultA.localStorage) {
+                    log(`[Browser UI] Phase A localStorage keys: ${Object.keys(resultA.localStorage).join(', ')}`);
                 }
+            } else if (resultA.success && !resultA.controllerId) {
+                log(`[Browser UI] Phase A — CMP loaded but no controllerID found!`, 'warn');
+                log(`[Browser UI] localStorage keys: ${resultA.localStorage ? Object.keys(resultA.localStorage).join(', ') : 'none'}`);
+                if (resultA.consents) {
+                    log(`[Browser UI] Consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
+                }
+            } else {
+                log(`[Browser UI] Phase A FAILED: ${resultA.error}`, 'fail');
             }
+        } catch (err) {
+            log(`[Browser UI] Phase A ERROR: ${err.message}`, 'fail');
+            report.browserUI.phaseA = { success: false, error: err.message };
+        }
 
-            // ── 5. Destroy Device A, nuke storage ──
-            addStep(idx, 'running', 'Destroying Device A session, clearing all storage...');
-            ucA = null;
-            nukeStorage();
-            await sleep(800);
-            addStep(idx, 'ok', 'Device A destroyed, all storage cleared',
-                'Simulating a completely different device with no local data');
+        await sleep(2000);
 
-            // ── 6. Init Device B with controllerID from A ──
-            addStep(idx, 'running', `Device B: Initializing SDK with ${pair.b} + controllerID from Device A...`);
-            addStep(idx, 'info', 'This is the critical CDCS test',
-                `Settings ID B: ${pair.b}\ncontrollerID: ${res.controllerIdA}\nIf CDCS works, consent should be restored and shouldCollectConsent should be false`);
-
-            let ucB;
+        // Phase B (only if Phase A got a controllerID)
+        const cidBrowserUI = report.browserUI.phaseA?.controllerId;
+        if (cidBrowserUI) {
+            log(`[Browser UI] Phase B: Loading CMP for ${sidB} with data-controller-id="${cidBrowserUI}"...`);
+            status.textContent = 'Browser UI: Phase B...';
             try {
-                ucB = new UC_SDK.default(pair.b, { controllerId: res.controllerIdA });
-                const initB = await withTimeout(ucB.init(), 25000, 'Device B init timeout (25s)');
-                res.initialLayerB = initB.initialLayer;
+                const resultB = await runInIframe(buildPhaseB_BrowserUI(sidB, cidBrowserUI), 35000);
+                report.browserUI.phaseB = resultB;
 
-                const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
-                const layerName = layerNames[initB.initialLayer] ?? initB.initialLayer;
+                if (resultB.success) {
+                    const consentRequired = resultB.isConsentRequired;
+                    log(`[Browser UI] Phase B — isConsentRequired: ${consentRequired}`, consentRequired ? 'fail' : 'ok');
+                    log(`[Browser UI] Phase B — controllerID: ${resultB.controllerId || '—'}`);
 
-                addStep(idx, initB.initialLayer === 2 ? 'ok' : 'warn',
-                    `Device B: SDK initialized`,
-                    `initialLayer: ${initB.initialLayer} (${layerName})`);
-            } catch (err) {
-                addStep(idx, 'fail', 'Device B: Init with controllerID failed', err.message, true);
-                res.errors.push(`Device B init: ${err.message}`);
-                throw err;
-            }
-
-            // ── 7. Read Device B consents ──
-            addStep(idx, 'running', 'Device B: Reading consents after restore...');
-            try {
-                const settingsB = ucB.getSettings();
-                res.controllerIdB = settingsB?.controllerId || null;
-
-                const servicesB = ucB.getServicesBaseInfo();
-                res.consentsB = servicesB.map(s => ({
-                    name: s.name,
-                    id: s.id,
-                    consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent
-                }));
-
-                addStep(idx, 'ok', 'Device B: State read',
-                    `controllerID B: ${res.controllerIdB}\nConsents: ${res.consentsB.map(s => s.name + '=' + s.consent).join(', ')}`);
-            } catch (err) {
-                addStep(idx, 'fail', 'Device B: Failed to read state', err.message, true);
-                res.errors.push(`Device B read: ${err.message}`);
-            }
-
-            // ── 8. Compare consents ──
-            addStep(idx, 'running', 'Comparing Device A vs Device B consents...');
-
-            // Find matching services by template ID
-            let matched = 0;
-            let mismatches = [];
-
-            for (const sA of res.consentsA) {
-                const sB = res.consentsB.find(b => b.id === sA.id);
-                if (sB) {
-                    matched++;
-                    if (sA.consent !== sB.consent) {
-                        mismatches.push(`${sA.name} (${sA.id}): A=${sA.consent}, B=${sB.consent}`);
+                    if (resultB.consents) {
+                        const allTrue = resultB.consents.every(s => s.consent === true);
+                        log(`[Browser UI] Phase B consents: ${resultB.consents.map(s => s.name + '=' + s.consent).join(', ')}`,
+                            allTrue ? 'ok' : 'warn');
                     }
-                }
-            }
 
-            // If different Settings IDs, services might not overlap
-            if (matched === 0 && pair.a !== pair.b) {
-                addStep(idx, 'warn', 'No overlapping services between A and B',
-                    `A has ${res.consentsA.length} services, B has ${res.consentsB.length} services. Different Settings IDs may have different DPS configurations.`);
-                // In this case, check if B consents are all true (restored from A's accept all)
-                const allBTrue = res.consentsB.every(s => s.consent === true);
-                if (allBTrue && res.consentsB.length > 0) {
-                    addStep(idx, 'ok', 'All Device B services show consent=true', 'Consent appears to have been restored');
+                    if (resultB.networkLog && resultB.networkLog.length > 0) {
+                        resultB.networkLog.forEach(n => {
+                            const short = n.url.split('?')[0];
+                            log(`[Browser UI] Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
+                        });
+                    }
+
+                    if (!consentRequired) {
+                        log('[Browser UI] ✓ CDCS WORKING — banner will NOT show on Device B', 'ok');
+                    } else {
+                        log('[Browser UI] ✗ CDCS NOT WORKING — banner WILL show again on Device B', 'fail');
+                    }
                 } else {
-                    const falseOnes = res.consentsB.filter(s => !s.consent).map(s => s.name);
-                    addStep(idx, 'fail', 'Some Device B services show consent=false',
-                        `Services with false: ${falseOnes.join(', ')}`, true);
-                    res.errors.push(`Device B services not restored: ${falseOnes.join(', ')}`);
+                    log(`[Browser UI] Phase B FAILED: ${resultB.error}`, 'fail');
                 }
-            } else if (mismatches.length === 0) {
-                addStep(idx, 'ok', `Consents match across ${matched} shared services`);
-                res.consentMatch = true;
-            } else {
-                addStep(idx, 'fail', `Consent mismatch in ${mismatches.length} services`,
-                    mismatches.join('\n'), true);
-                res.consentMatch = false;
-                res.errors.push(`Consent mismatch: ${mismatches.join('; ')}`);
+            } catch (err) {
+                log(`[Browser UI] Phase B ERROR: ${err.message}`, 'fail');
+                report.browserUI.phaseB = { success: false, error: err.message };
             }
-
-            // ── 9. Critical check: shouldCollectConsent ──
-            const shouldCollect = res.initialLayerB !== 2; // 2 = NONE means no banner needed
-            res.shouldCollectB = shouldCollect;
-
-            if (!shouldCollect) {
-                addStep(idx, 'ok', '✓ shouldCollectConsent = false',
-                    'Banner will NOT show on Device B. CDCS is working correctly for this pair.');
-            } else {
-                const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
-                const ln = layerNames[res.initialLayerB] ?? res.initialLayerB;
-                addStep(idx, 'fail', '✗ shouldCollectConsent = true (CDCS NOT WORKING)',
-                    `initialLayer=${res.initialLayerB} (${ln}). Banner WILL show again on Device B despite consent existing on Device A.`, true);
-                res.errors.push(`shouldCollectConsent=true on restore (initialLayer=${res.initialLayerB}/${ln})`);
-            }
-
-            // ── 10. ControllerID check ──
-            if (res.controllerIdA && res.controllerIdB) {
-                if (res.controllerIdA === res.controllerIdB) {
-                    addStep(idx, 'ok', 'ControllerID preserved across devices',
-                        `${res.controllerIdA}`);
-                } else {
-                    addStep(idx, 'fail', 'ControllerID changed on Device B',
-                        `A: ${res.controllerIdA}\nB: ${res.controllerIdB}\nDevice B generated a new ID instead of using A's. This confirms CDCS is not restoring.`, true);
-                    res.errors.push('ControllerID mismatch: Device B got a new ID');
-                }
-            }
-
-            ucB = null;
-
-        } catch (err) {
-            // Logged per step
-        }
-
-        // ── Network analysis ──
-        net.restore();
-        const netLog = net.getLog();
-        renderNetLog(idx, netLog);
-
-        const failed = netLog.filter(e => e.ok === false || e.error);
-        if (failed.length > 0) {
-            for (const f of failed) {
-                const shortUrl = f.url.split('?')[0];
-                const msg = `[${f.status || 'ERR'}] ${shortUrl}`;
-                res.networkIssues.push(msg);
-            }
-            addStep(idx, 'warn', `${failed.length} failed network request(s)`,
-                res.networkIssues.join('\n'));
-        }
-
-        // ── Final verdict ──
-        if (res.errors.length === 0) {
-            res.verdict = 'pass';
         } else {
-            res.verdict = 'fail';
+            log('[Browser UI] Skipping Phase B — no controllerID from Phase A', 'warn');
         }
 
-        setVerdict(idx, res.verdict);
-        return res;
-    }
+        await sleep(2000);
 
-    // ══════════════════════════════════════════════════
-    // Run all
-    // ══════════════════════════════════════════════════
-    async function runAllTests() {
-        const btn = document.getElementById('btnRun');
-        const statusEl = document.getElementById('globalStatus');
-        btn.disabled = true;
+        // ────────────────────────────────────────
+        // TEST 2: Browser SDK (for comparison)
+        // ────────────────────────────────────────
+        log('', '');
+        log('═══ TEST 2: Browser SDK (npm bundle, for comparison) ═══', 'info');
 
-        // Gather pairs
-        const pairs = [];
-        document.querySelectorAll('[id^="pair-"]').forEach(row => {
-            const id = row.id.replace('pair-', '');
-            const a = document.getElementById(`pairA-${id}`)?.value.trim();
-            const b = document.getElementById(`pairB-${id}`)?.value.trim();
-            if (a && b) pairs.push({ a, b });
-        });
-
-        if (pairs.length === 0) {
-            statusEl.textContent = 'Add at least one test pair.';
-            btn.disabled = false;
-            return;
-        }
-
-        // Load SDK
-        statusEl.textContent = 'Loading Browser SDK...';
+        // Phase A
+        log(`[Browser SDK] Phase A: Loading SDK for ${sidA}, will accept all...`);
+        status.textContent = 'Browser SDK: Phase A...';
         try {
-            await loadSDK();
+            const resultA = await runInIframe(buildPhaseA_BrowserSDK(sidA), 30000);
+            report.browserSDK.phaseA = resultA;
+
+            if (resultA.success && resultA.controllerId) {
+                log(`[Browser SDK] Phase A OK — controllerID: ${resultA.controllerId}`, 'ok');
+                if (resultA.consents) {
+                    log(`[Browser SDK] Phase A consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
+                }
+            } else {
+                log(`[Browser SDK] Phase A FAILED: ${resultA.error || 'no controllerID'}`, 'fail');
+            }
         } catch (err) {
-            statusEl.textContent = 'FATAL: SDK failed to load. Open in Chrome/Firefox, disable adblockers.';
-            btn.disabled = false;
-            return;
+            log(`[Browser SDK] Phase A ERROR: ${err.message}`, 'fail');
+            report.browserSDK.phaseA = { success: false, error: err.message };
         }
 
-        // Build cards
-        const area = document.getElementById('resultsArea');
-        area.innerHTML = '';
-        pairs.forEach((p, i) => area.appendChild(createTestCard(p, i)));
+        await sleep(1500);
 
-        // Run sequentially
-        const allResults = [];
-        for (let i = 0; i < pairs.length; i++) {
-            statusEl.textContent = `Testing pair ${i + 1}/${pairs.length}: ${pairs[i].a} → ${pairs[i].b}`;
-            const r = await runPairTest(pairs[i], i);
-            allResults.push(r);
-            if (i < pairs.length - 1) await sleep(1500);
+        // Phase B
+        const cidBrowserSDK = report.browserSDK.phaseA?.controllerId;
+        if (cidBrowserSDK) {
+            log(`[Browser SDK] Phase B: Loading SDK for ${sidB} with controllerID: ${cidBrowserSDK.substring(0, 20)}...`);
+            status.textContent = 'Browser SDK: Phase B...';
+            try {
+                const resultB = await runInIframe(buildPhaseB_BrowserSDK(sidB, cidBrowserSDK), 30000);
+                report.browserSDK.phaseB = resultB;
+
+                if (resultB.success) {
+                    const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
+                    const ln = layerNames[resultB.initialLayer] ?? resultB.initialLayer;
+                    const shouldCollect = resultB.initialLayer !== 2;
+
+                    log(`[Browser SDK] Phase B — initialLayer: ${resultB.initialLayer} (${ln})`, shouldCollect ? 'fail' : 'ok');
+                    log(`[Browser SDK] Phase B — controllerID: ${resultB.controllerId || '—'}`);
+
+                    if (resultB.consents) {
+                        log(`[Browser SDK] Phase B consents: ${resultB.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
+                    }
+
+                    if (resultB.networkLog && resultB.networkLog.length > 0) {
+                        resultB.networkLog.forEach(n => {
+                            const short = n.url.split('?')[0];
+                            log(`[Browser SDK] Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
+                        });
+                    }
+
+                    if (!shouldCollect) {
+                        log('[Browser SDK] ✓ CDCS WORKING — shouldCollectConsent=false', 'ok');
+                    } else {
+                        log('[Browser SDK] ✗ CDCS NOT WORKING — shouldCollectConsent=true', 'fail');
+                    }
+                } else {
+                    log(`[Browser SDK] Phase B FAILED: ${resultB.error}`, 'fail');
+                }
+            } catch (err) {
+                log(`[Browser SDK] Phase B ERROR: ${err.message}`, 'fail');
+                report.browserSDK.phaseB = { success: false, error: err.message };
+            }
+        } else {
+            log('[Browser SDK] Skipping Phase B — no controllerID from Phase A', 'warn');
         }
 
-        const passed = allResults.filter(r => r.verdict === 'pass').length;
-        const failed = allResults.filter(r => r.verdict === 'fail').length;
-        statusEl.textContent = `Done: ${passed} pass / ${failed} fail`;
-
-        renderSummary(allResults);
+        // ────────────────────────────────────────
+        // Summary
+        // ────────────────────────────────────────
+        status.textContent = 'Done.';
+        renderSummary(report);
         btn.disabled = false;
     }
 
-    function renderSummary(results) {
-        const area = document.getElementById('summaryArea');
-        let r = `CDCS CROSS-DEVICE TEST REPORT\n`;
-        r += `Generated: ${new Date().toISOString()}\n`;
-        r += `Browser SDK: 2.12.1\n`;
-        r += `${'═'.repeat(65)}\n\n`;
+    function renderSummary(r) {
+        let t = `CDCS TEST REPORT v3\n`;
+        t += `Generated: ${r.timestamp}\n`;
+        t += `Settings A: ${r.settingsA} → Settings B: ${r.settingsB}\n`;
+        t += `${'═'.repeat(60)}\n\n`;
 
-        for (const t of results) {
-            const icon = t.verdict === 'pass' ? '✓ PASS' : '✗ FAIL';
-            r += `${icon}: ${t.settingsA} → ${t.settingsB}\n`;
-            r += `  controllerID (A):           ${t.controllerIdA || '—'}\n`;
-            r += `  controllerID (B):           ${t.controllerIdB || '—'}\n`;
-            r += `  controllerID preserved:     ${t.controllerIdA && t.controllerIdB ? (t.controllerIdA === t.controllerIdB ? 'YES' : 'NO') : '—'}\n`;
-            r += `  initialLayer on restore:    ${t.initialLayerB} (${({0:'FIRST_LAYER',1:'SECOND_LAYER',2:'NONE'})[t.initialLayerB] ?? '?'})\n`;
-            r += `  shouldCollectConsent:       ${t.shouldCollectB}\n`;
-
-            if (t.consentsA.length) {
-                r += `  Device A consents:\n`;
-                t.consentsA.forEach(s => { r += `    ${s.name} (${s.id}): ${s.consent}\n`; });
+        // Browser UI
+        t += `── CMP V2 BROWSER UI ──\n`;
+        if (r.browserUI.phaseA) {
+            t += `Phase A: ${r.browserUI.phaseA.success ? 'OK' : 'FAILED'}\n`;
+            t += `  controllerID: ${r.browserUI.phaseA.controllerId || '—'}\n`;
+            if (r.browserUI.phaseA.consents) {
+                t += `  consents: ${r.browserUI.phaseA.consents.map(s => s.name + '=' + s.consent).join(', ')}\n`;
             }
-            if (t.consentsB.length) {
-                r += `  Device B consents:\n`;
-                t.consentsB.forEach(s => { r += `    ${s.name} (${s.id}): ${s.consent}\n`; });
+        }
+        if (r.browserUI.phaseB) {
+            t += `Phase B: ${r.browserUI.phaseB.success ? 'OK' : 'FAILED'}\n`;
+            t += `  isConsentRequired: ${r.browserUI.phaseB.isConsentRequired}\n`;
+            t += `  controllerID: ${r.browserUI.phaseB.controllerId || '—'}\n`;
+            if (r.browserUI.phaseB.consents) {
+                t += `  consents: ${r.browserUI.phaseB.consents.map(s => s.name + '=' + s.consent).join(', ')}\n`;
             }
-            if (t.networkIssues.length) {
-                r += `  Network issues:\n`;
-                t.networkIssues.forEach(n => { r += `    ${n}\n`; });
+            if (r.browserUI.phaseB.networkLog) {
+                const fails = r.browserUI.phaseB.networkLog.filter(n => n.status === 404 || String(n.status).startsWith('ERR'));
+                if (fails.length) {
+                    t += `  FAILED requests:\n`;
+                    fails.forEach(f => { t += `    [${f.status}] ${f.url.split('?')[0]}\n`; });
+                }
             }
-            if (t.errors.length) {
-                r += `  ERRORS:\n`;
-                t.errors.forEach(e => { r += `    → ${e}\n`; });
-            }
-            r += '\n';
+            t += `  VERDICT: ${r.browserUI.phaseB.isConsentRequired === false ? '✓ PASS (CDCS working)' : '✗ FAIL (CDCS not working)'}\n`;
         }
 
-        r += `${'═'.repeat(65)}\n`;
-        const p = results.filter(x => x.verdict === 'pass').length;
-        const f = results.filter(x => x.verdict === 'fail').length;
-        r += `TOTAL: ${p} PASS / ${f} FAIL out of ${results.length} pairs\n\n`;
-
-        if (f > 0) {
-            r += `DIAGNOSIS:\n`;
-            r += `The CDCS restore was tested by creating consent on Device A\n`;
-            r += `(Settings ID A), then initializing Device B (Settings ID B)\n`;
-            r += `with the controllerID from A — after clearing all local storage.\n`;
-            r += `Failed pairs show shouldCollectConsent=true on Device B,\n`;
-            r += `meaning the banner would appear again despite consent existing.\n`;
+        t += `\n── BROWSER SDK ──\n`;
+        if (r.browserSDK.phaseA) {
+            t += `Phase A: ${r.browserSDK.phaseA.success ? 'OK' : 'FAILED'}\n`;
+            t += `  controllerID: ${r.browserSDK.phaseA.controllerId || '—'}\n`;
+        }
+        if (r.browserSDK.phaseB) {
+            const ln = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' }[r.browserSDK.phaseB.initialLayer] ?? '?';
+            const pass = r.browserSDK.phaseB.initialLayer === 2;
+            t += `Phase B: ${r.browserSDK.phaseB.success ? 'OK' : 'FAILED'}\n`;
+            t += `  initialLayer: ${r.browserSDK.phaseB.initialLayer} (${ln})\n`;
+            t += `  controllerID: ${r.browserSDK.phaseB.controllerId || '—'}\n`;
+            if (r.browserSDK.phaseB.networkLog) {
+                const fails = r.browserSDK.phaseB.networkLog.filter(n => n.status === 404 || String(n.status).startsWith('ERR'));
+                if (fails.length) {
+                    t += `  FAILED requests:\n`;
+                    fails.forEach(f => { t += `    [${f.status}] ${f.url.split('?')[0]}\n`; });
+                }
+            }
+            t += `  VERDICT: ${pass ? '✓ PASS (CDCS working)' : '✗ FAIL (CDCS not working)'}\n`;
         }
 
-        area.innerHTML = `<div class="summary-card"><h2>Test Report (copy-pasteable)</h2><pre>${esc(r)}</pre></div>`;
-    }
+        t += `\n${'═'.repeat(60)}\n`;
 
-    // ── Helpers ──
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-    function withTimeout(p, ms, msg) {
-        return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+        document.getElementById('summaryArea').innerHTML = `<div class="summary"><h2 style="font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Test Report</h2><pre>${esc(t)}</pre></div>`;
     }
 </script>
 
