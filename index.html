@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CDCS Test v3 — CMP V2 Browser UI</title>
+    <title>CDCS Test v4 — 3 Methods Compared</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
         :root {
@@ -23,15 +23,14 @@
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
         .card h2 { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
         label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-family: var(--mono); }
-        input, select { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 10px; }
+        input { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 10px; }
         input:focus { border-color: var(--blue); }
         input::placeholder { color: #3a4050; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .btn { padding: 10px 20px; border: none; border-radius: 6px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; }
         .btn-primary { background: var(--blue); color: var(--bg); }
         .btn-primary:hover { opacity: 0.85; }
         .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-        .log { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0; max-height: 600px; overflow-y: auto; margin-top: 12px; }
+        .log { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; max-height: 700px; overflow-y: auto; margin-top: 12px; }
         .log-entry { padding: 6px 14px; font-family: var(--mono); font-size: 11px; line-height: 1.6; border-bottom: 1px solid rgba(38,44,54,0.4); word-break: break-word; }
         .log-entry:last-child { border-bottom: none; }
         .log-entry.ok { color: var(--green); background: var(--green-bg); }
@@ -41,38 +40,28 @@
         .log-entry .ts { color: #3a4050; margin-right: 6px; }
         .summary { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 16px; }
         .summary pre { font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
-
-        /* Hide the UC banner UI that will appear */
-        #uc-banner-holder, .uc-banner-holder, [id*="usercentrics"] { /* Don't hide - we need it to work */ }
     </style>
 </head>
 <body>
 
 <div style="display:flex;align-items:baseline;">
-    <h1>CDCS Test v3</h1>
-    <span class="version">CMP V2 Browser UI + Browser SDK</span>
+    <h1>CDCS Test v4</h1>
+    <span class="version">3 Methods Compared</span>
 </div>
 <p class="subtitle">
-    This test uses the <strong>actual CMP V2 Browser UI</strong> (the production script tag with <code>data-controller-id</code>) 
-    to test CDCS — not just the Browser SDK. It also tests the Browser SDK for comparison.<br>
-    <strong>Flow:</strong> Device A gives consent → capture controllerID → clear everything → Device B loads CMP with that controllerID → check if banner appears.
+    Tests 3 different CDCS restore methods on the same settingsId with the same controllerID:<br>
+    <strong>Method 1:</strong> data-controller-id on script tag (documented approach)<br>
+    <strong>Method 2:</strong> UC_UI.restoreUserSession() after init (what Wooga uses)<br>
+    <strong>Method 3:</strong> Browser SDK restoreUserSession() (npm package)
 </p>
 
 <div class="card">
     <h2>Configuration</h2>
-    <div class="row">
-        <div>
-            <label>Device A — Settings ID (consent source)</label>
-            <input id="sidA" value="RISEiwKdT7LE2_" placeholder="e.g. 3V6ZqxlVhq8kAw" />
-        </div>
-        <div>
-            <label>Device B — Settings ID (restore target)</label>
-            <input id="sidB" value="RISEiwKdT7LE2_" placeholder="e.g. tIkRJxexTam6P8" />
-        </div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-primary" id="btnRun" onclick="runFullTest()">Run Full Test</button>
-        <span id="statusMsg" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:36px;"></span>
+    <label>Settings ID</label>
+    <input id="sid" value="tIkRJxexTam6P8" />
+    <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" id="btnRun" onclick="runTest()">Run Test</button>
+        <span id="statusMsg" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);"></span>
     </div>
 </div>
 
@@ -85,22 +74,13 @@
 
 <div id="summaryArea"></div>
 
-<!-- Iframe sandbox for each test phase -->
 <iframe id="testFrame" style="width:1px;height:1px;position:fixed;left:-100px;top:-100px;border:none;"></iframe>
 
 <script>
-    // ══════════════════════════════════════════════════
-    // We use iframes to get a truly clean environment
-    // for each phase — no localStorage bleed, no SDK
-    // instances lingering in memory.
-    // ══════════════════════════════════════════════════
-
     function log(msg, type = '') {
         const area = document.getElementById('logArea');
-        // Remove "waiting" placeholder
-        const placeholder = area.querySelector('.log-entry[style]');
-        if (placeholder) placeholder.remove();
-
+        const ph = area.querySelector('.log-entry[style]');
+        if (ph) ph.remove();
         const div = document.createElement('div');
         div.className = `log-entry ${type}`;
         const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -108,23 +88,13 @@
         area.appendChild(div);
         area.scrollTop = area.scrollHeight;
     }
-
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // ══════════════════════════════════════════════════
-    // Run a function inside a fresh iframe
-    // This gives us isolated localStorage + clean JS env
-    // ══════════════════════════════════════════════════
-    function runInIframe(htmlContent, timeoutMs = 30000) {
+    function runInIframe(html, timeoutMs = 35000) {
         return new Promise((resolve, reject) => {
             const iframe = document.getElementById('testFrame');
-            const timer = setTimeout(() => {
-                reject(new Error(`Iframe timeout after ${timeoutMs / 1000}s`));
-            }, timeoutMs);
-
-            // Listen for message from iframe
+            const timer = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs/1000}s`)), timeoutMs);
             const handler = (event) => {
                 if (event.source === iframe.contentWindow) {
                     window.removeEventListener('message', handler);
@@ -133,493 +103,435 @@
                 }
             };
             window.addEventListener('message', handler);
-
-            // Write fresh content to iframe
-            iframe.srcdoc = htmlContent;
+            iframe.srcdoc = html;
         });
     }
 
-    // ══════════════════════════════════════════════════
-    // Phase A: Load CMP V2 Browser UI, accept all,
-    // return controllerID + consents
-    // ══════════════════════════════════════════════════
-    function buildPhaseA_BrowserUI(settingsId) {
+    // ══════════════════════════════════════════
+    // PHASE A: Give consent, get controllerID
+    // Uses Browser UI script tag (standard)
+    // ══════════════════════════════════════════
+    function buildPhaseA(sid) {
         return `<!DOCTYPE html><html><head>
-            <script id="usercentrics-cmp" data-settings-id="${settingsId}" 
+            <script id="usercentrics-cmp" data-settings-id="${sid}"
                 src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
-        </head><body>
-        <script>
-            // Wait for UC_UI to be ready
+        </head><body><script>
             window.addEventListener('UC_UI_INITIALIZED', function() {
                 try {
-                    // Accept all via the UC_UI API
-                    if (window.UC_UI && typeof UC_UI.acceptAllConsents === 'function') {
-                        UC_UI.acceptAllConsents();
-                    }
-
-                    // Give it a moment to process
+                    UC_UI.acceptAllConsents();
                     setTimeout(function() {
-                        var result = { phase: 'A_BrowserUI', success: true };
-
-                        // Get controller ID from localStorage
-                        var controllerId = null;
-                        for (var i = 0; i < localStorage.length; i++) {
-                            var key = localStorage.key(i);
-                            var val = localStorage.getItem(key);
-                            if (key && val && key.includes('controllerId')) {
-                                controllerId = val;
-                            }
-                            // Also check the UC cookie/storage format
-                            if (key && key.startsWith('uc_') && val) {
-                                try {
-                                    var parsed = JSON.parse(val);
-                                    if (parsed && parsed.controllerId) controllerId = parsed.controllerId;
-                                } catch(e) {}
-                            }
-                        }
-
-                        // Try UC_UI API
-                        if (!controllerId && window.UC_UI && typeof UC_UI.getControllerId === 'function') {
-                            controllerId = UC_UI.getControllerId();
-                        }
-
-                        result.controllerId = controllerId;
-
-                        // Get consents
-                        if (window.UC_UI && typeof UC_UI.getServicesBaseInfo === 'function') {
-                            var services = UC_UI.getServicesBaseInfo();
-                            result.consents = services.map(function(s) {
+                        var cid = null;
+                        if (typeof UC_UI.getControllerId === 'function') cid = UC_UI.getControllerId();
+                        var services = [];
+                        if (typeof UC_UI.getServicesBaseInfo === 'function') {
+                            services = UC_UI.getServicesBaseInfo().map(function(s) {
                                 return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
                             });
                         }
-
-                        // Dump full localStorage for debugging
-                        result.localStorage = {};
-                        for (var i = 0; i < localStorage.length; i++) {
-                            var k = localStorage.key(i);
-                            result.localStorage[k] = localStorage.getItem(k).substring(0, 200);
-                        }
-
-                        window.parent.postMessage(result, '*');
+                        window.parent.postMessage({ phase: 'A', success: true, controllerId: cid, consents: services }, '*');
                     }, 3000);
-                } catch(err) {
-                    window.parent.postMessage({ phase: 'A_BrowserUI', success: false, error: err.message }, '*');
+                } catch(e) {
+                    window.parent.postMessage({ phase: 'A', success: false, error: e.message }, '*');
                 }
             });
-
-            // Fallback if UC_UI never initializes
-            setTimeout(function() {
-                if (!window.UC_UI) {
-                    window.parent.postMessage({ phase: 'A_BrowserUI', success: false, error: 'UC_UI never initialized (timeout)' }, '*');
-                }
-            }, 25000);
-        <\/script>
-        </body></html>`;
+            setTimeout(function() { if (!window.UC_UI) window.parent.postMessage({ phase: 'A', success: false, error: 'UC_UI timeout' }, '*'); }, 30000);
+        <\/script></body></html>`;
     }
 
-    // ══════════════════════════════════════════════════
-    // Phase B: Load CMP V2 Browser UI WITH controller-id,
-    // check if banner appears or not
-    // ══════════════════════════════════════════════════
-    function buildPhaseB_BrowserUI(settingsId, controllerId) {
+    // ══════════════════════════════════════════
+    // METHOD 1: data-controller-id on script tag
+    // ══════════════════════════════════════════
+    function buildMethod1(sid, cid) {
         return `<!DOCTYPE html><html><head>
-            <script id="usercentrics-cmp" data-settings-id="${settingsId}" data-controller-id="${controllerId}"
+            <script id="usercentrics-cmp" data-settings-id="${sid}" data-controller-id="${cid}"
                 src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
-        </head><body>
-        <script>
-            var networkLog = [];
+        </head><body><script>
+            var netLog = [];
             var origFetch = window.fetch;
             window.fetch = function() {
                 var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
                 if (url.includes('consent') || url.includes('Consent')) {
-                    var entry = { url: url, status: null };
-                    networkLog.push(entry);
-                    return origFetch.apply(this, arguments).then(function(r) { entry.status = r.status; return r; }).catch(function(e) { entry.status = 'ERR:' + e.message; throw e; });
+                    var e = { url: url, status: null };
+                    netLog.push(e);
+                    return origFetch.apply(this, arguments).then(function(r) { e.status = r.status; return r; }).catch(function(err) { e.status = 'ERR'; throw err; });
                 }
                 return origFetch.apply(this, arguments);
-            };
-
-            // Also intercept XMLHttpRequest
-            var origXHROpen = XMLHttpRequest.prototype.open;
-            var origXHRSend = XMLHttpRequest.prototype.send;
-            XMLHttpRequest.prototype.open = function(method, url) {
-                this._url = url;
-                return origXHROpen.apply(this, arguments);
-            };
-            XMLHttpRequest.prototype.send = function() {
-                var self = this;
-                if (self._url && (self._url.includes('consent') || self._url.includes('Consent'))) {
-                    var entry = { url: self._url, status: null };
-                    networkLog.push(entry);
-                    self.addEventListener('load', function() { entry.status = self.status; });
-                    self.addEventListener('error', function() { entry.status = 'ERR'; });
-                }
-                return origXHRSend.apply(this, arguments);
             };
 
             window.addEventListener('UC_UI_INITIALIZED', function() {
                 setTimeout(function() {
                     try {
-                        var result = { phase: 'B_BrowserUI', success: true };
-
-                        // Check if CMP wants to show banner
-                        result.isConsentRequired = false;
-                        if (window.UC_UI && typeof UC_UI.isConsentRequired === 'function') {
-                            result.isConsentRequired = UC_UI.isConsentRequired();
-                        }
-
-                        // Get controller ID
-                        if (window.UC_UI && typeof UC_UI.getControllerId === 'function') {
-                            result.controllerId = UC_UI.getControllerId();
-                        }
-
-                        // Get consents
-                        if (window.UC_UI && typeof UC_UI.getServicesBaseInfo === 'function') {
-                            var services = UC_UI.getServicesBaseInfo();
-                            result.consents = services.map(function(s) {
+                        var result = { method: 1, success: true };
+                        result.isConsentRequired = typeof UC_UI.isConsentRequired === 'function' ? UC_UI.isConsentRequired() : 'N/A';
+                        result.controllerId = typeof UC_UI.getControllerId === 'function' ? UC_UI.getControllerId() : null;
+                        if (typeof UC_UI.getServicesBaseInfo === 'function') {
+                            result.consents = UC_UI.getServicesBaseInfo().map(function(s) {
                                 return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
                             });
                         }
-
-                        result.networkLog = networkLog;
+                        result.networkLog = netLog;
                         window.parent.postMessage(result, '*');
-                    } catch(err) {
-                        window.parent.postMessage({ phase: 'B_BrowserUI', success: false, error: err.message, networkLog: networkLog }, '*');
+                    } catch(e) {
+                        window.parent.postMessage({ method: 1, success: false, error: e.message, networkLog: netLog }, '*');
                     }
                 }, 4000);
             });
-
-            setTimeout(function() {
-                if (!window.UC_UI) {
-                    window.parent.postMessage({ phase: 'B_BrowserUI', success: false, error: 'UC_UI never initialized (timeout)', networkLog: networkLog }, '*');
-                }
-            }, 25000);
-        <\/script>
-        </body></html>`;
-    }
-
-    // ══════════════════════════════════════════════════
-    // Phase A via Browser SDK (for comparison)
-    // ══════════════════════════════════════════════════
-    function buildPhaseA_BrowserSDK(settingsId) {
-        return `<!DOCTYPE html><html><head>
-            <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js"><\/script>
-        </head><body><script>
-            try {
-                var UC = new UC_SDK.default('${settingsId}');
-                UC.init().then(function(initValues) {
-                    UC.acceptAllServices();
-                    setTimeout(function() {
-                        var settings = UC.getSettings();
-                        var services = UC.getServicesBaseInfo();
-                        window.parent.postMessage({
-                            phase: 'A_BrowserSDK',
-                            success: true,
-                            controllerId: settings.controllerId,
-                            consents: services.map(function(s) { 
-                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
-                            }),
-                            initialLayer: initValues.initialLayer
-                        }, '*');
-                    }, 2000);
-                }).catch(function(err) {
-                    window.parent.postMessage({ phase: 'A_BrowserSDK', success: false, error: err.message }, '*');
-                });
-            } catch(err) {
-                window.parent.postMessage({ phase: 'A_BrowserSDK', success: false, error: err.message }, '*');
-            }
+            setTimeout(function() { if (!window.UC_UI) window.parent.postMessage({ method: 1, success: false, error: 'timeout' }, '*'); }, 30000);
         <\/script></body></html>`;
     }
 
-    // ══════════════════════════════════════════════════
-    // Phase B via Browser SDK (for comparison)
-    // ══════════════════════════════════════════════════
-    function buildPhaseB_BrowserSDK(settingsId, controllerId) {
+    // ══════════════════════════════════════════
+    // METHOD 2: UC_UI.restoreUserSession()
+    // Load Browser UI normally, then call
+    // restoreUserSession after init — Wooga's approach
+    // ══════════════════════════════════════════
+    function buildMethod2(sid, cid) {
         return `<!DOCTYPE html><html><head>
-            <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js"><\/script>
+            <script id="usercentrics-cmp" data-settings-id="${sid}"
+                src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
         </head><body><script>
-            var networkLog = [];
+            var netLog = [];
             var origFetch = window.fetch;
             window.fetch = function() {
                 var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
                 if (url.includes('consent') || url.includes('Consent')) {
-                    var entry = { url: url, status: null };
-                    networkLog.push(entry);
-                    return origFetch.apply(this, arguments).then(function(r) { entry.status = r.status; return r; }).catch(function(e) { entry.status = 'ERR:' + e.message; throw e; });
+                    var e = { url: url, status: null };
+                    netLog.push(e);
+                    return origFetch.apply(this, arguments).then(function(r) { e.status = r.status; return r; }).catch(function(err) { e.status = 'ERR'; throw err; });
+                }
+                return origFetch.apply(this, arguments);
+            };
+
+            window.addEventListener('UC_UI_INITIALIZED', function() {
+                var result = { method: 2, success: true };
+
+                // First: check what methods exist on UC_UI
+                var methods = [];
+                for (var k in UC_UI) {
+                    if (typeof UC_UI[k] === 'function') methods.push(k);
+                }
+                result.availableMethods = methods;
+                result.hasRestoreUserSession = typeof UC_UI.restoreUserSession === 'function';
+
+                if (!result.hasRestoreUserSession) {
+                    result.success = true;
+                    result.error = 'UC_UI.restoreUserSession does NOT exist as a function';
+                    result.networkLog = netLog;
+                    window.parent.postMessage(result, '*');
+                    return;
+                }
+
+                // It exists — try calling it
+                try {
+                    var restoreResult = UC_UI.restoreUserSession('${cid}');
+
+                    // Check if it returns a promise
+                    if (restoreResult && typeof restoreResult.then === 'function') {
+                        restoreResult.then(function(res) {
+                            setTimeout(function() {
+                                result.restoreReturn = 'promise resolved';
+                                result.restoreValue = JSON.stringify(res);
+                                finishMethod2(result);
+                            }, 3000);
+                        }).catch(function(err) {
+                            result.restoreReturn = 'promise rejected';
+                            result.restoreError = err.message || String(err);
+                            finishMethod2(result);
+                        });
+                    } else {
+                        result.restoreReturn = 'sync: ' + JSON.stringify(restoreResult);
+                        setTimeout(function() { finishMethod2(result); }, 3000);
+                    }
+                } catch(e) {
+                    result.restoreReturn = 'threw exception';
+                    result.restoreError = e.message;
+                    finishMethod2(result);
+                }
+            });
+
+            function finishMethod2(result) {
+                try {
+                    result.isConsentRequired = typeof UC_UI.isConsentRequired === 'function' ? UC_UI.isConsentRequired() : 'N/A';
+                    result.controllerId = typeof UC_UI.getControllerId === 'function' ? UC_UI.getControllerId() : null;
+                    if (typeof UC_UI.getServicesBaseInfo === 'function') {
+                        result.consents = UC_UI.getServicesBaseInfo().map(function(s) {
+                            return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                        });
+                    }
+                } catch(e) {
+                    result.readError = e.message;
+                }
+                result.networkLog = netLog;
+                window.parent.postMessage(result, '*');
+            }
+
+            setTimeout(function() { if (!window.UC_UI) window.parent.postMessage({ method: 2, success: false, error: 'timeout' }, '*'); }, 30000);
+        <\/script></body></html>`;
+    }
+
+    // ══════════════════════════════════════════
+    // METHOD 3: Browser SDK restoreUserSession()
+    // ══════════════════════════════════════════
+    function buildMethod3(sid, cid) {
+        return `<!DOCTYPE html><html><head>
+            <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js"><\/script>
+        </head><body><script>
+            var netLog = [];
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
+                if (url.includes('consent') || url.includes('Consent')) {
+                    var e = { url: url, status: null };
+                    netLog.push(e);
+                    return origFetch.apply(this, arguments).then(function(r) { e.status = r.status; return r; }).catch(function(err) { e.status = 'ERR'; throw err; });
                 }
                 return origFetch.apply(this, arguments);
             };
 
             try {
-                var UC = new UC_SDK.default('${settingsId}', { controllerId: '${controllerId}' });
+                var UC = new UC_SDK.default('${sid}');
                 UC.init().then(function(initValues) {
-                    setTimeout(function() {
-                        var settings = UC.getSettings();
-                        var services = UC.getServicesBaseInfo();
+                    // Now call restoreUserSession
+                    UC.restoreUserSession('${cid}').then(function() {
+                        setTimeout(function() {
+                            var settings = UC.getSettings();
+                            var services = UC.getServicesBaseInfo();
+                            window.parent.postMessage({
+                                method: 3,
+                                success: true,
+                                restoreReturn: 'promise resolved',
+                                controllerId: settings.controllerId,
+                                initialLayer: initValues.initialLayer,
+                                consents: services.map(function(s) {
+                                    return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                                }),
+                                networkLog: netLog
+                            }, '*');
+                        }, 2000);
+                    }).catch(function(err) {
                         window.parent.postMessage({
-                            phase: 'B_BrowserSDK',
-                            success: true,
-                            controllerId: settings.controllerId,
-                            consents: services.map(function(s) {
-                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
-                            }),
-                            initialLayer: initValues.initialLayer,
-                            networkLog: networkLog
+                            method: 3, success: true,
+                            restoreReturn: 'promise rejected',
+                            restoreError: err.message || String(err),
+                            networkLog: netLog
                         }, '*');
-                    }, 2000);
+                    });
                 }).catch(function(err) {
-                    window.parent.postMessage({ phase: 'B_BrowserSDK', success: false, error: err.message, networkLog: networkLog }, '*');
+                    window.parent.postMessage({ method: 3, success: false, error: 'init failed: ' + err.message, networkLog: netLog }, '*');
                 });
             } catch(err) {
-                window.parent.postMessage({ phase: 'B_BrowserSDK', success: false, error: err.message, networkLog: networkLog }, '*');
+                window.parent.postMessage({ method: 3, success: false, error: err.message, networkLog: netLog }, '*');
             }
         <\/script></body></html>`;
     }
 
-    // ══════════════════════════════════════════════════
-    // Main test runner
-    // ══════════════════════════════════════════════════
-    async function runFullTest() {
+    // ══════════════════════════════════════════
+    // Main runner
+    // ══════════════════════════════════════════
+    async function runTest() {
         const btn = document.getElementById('btnRun');
         const status = document.getElementById('statusMsg');
         btn.disabled = true;
         document.getElementById('logArea').innerHTML = '';
         document.getElementById('summaryArea').innerHTML = '';
 
-        const sidA = document.getElementById('sidA').value.trim();
-        const sidB = document.getElementById('sidB').value.trim();
+        const sid = document.getElementById('sid').value.trim();
+        if (!sid) { log('Settings ID required', 'fail'); btn.disabled = false; return; }
 
-        if (!sidA || !sidB) {
-            log('ERROR: Both Settings IDs are required.', 'fail');
-            btn.disabled = false;
-            return;
-        }
+        const report = { settingsId: sid, timestamp: new Date().toISOString(), phaseA: null, method1: null, method2: null, method3: null };
 
-        const report = {
-            settingsA: sidA, settingsB: sidB, timestamp: new Date().toISOString(),
-            browserUI: { phaseA: null, phaseB: null },
-            browserSDK: { phaseA: null, phaseB: null }
-        };
-
-        // ────────────────────────────────────────
-        // TEST 1: CMP V2 Browser UI
-        // ────────────────────────────────────────
-        log('═══ TEST 1: CMP V2 Browser UI (production CMP script) ═══', 'info');
-
-        // Phase A
-        log(`[Browser UI] Phase A: Loading CMP for ${sidA}, will accept all...`);
-        status.textContent = 'Browser UI: Phase A...';
+        // ── Phase A: Give consent ──
+        log('═══ PHASE A: Give consent (Browser UI) ═══', 'info');
+        status.textContent = 'Phase A...';
         try {
-            const resultA = await runInIframe(buildPhaseA_BrowserUI(sidA), 35000);
-            report.browserUI.phaseA = resultA;
-
-            if (resultA.success && resultA.controllerId) {
-                log(`[Browser UI] Phase A OK — controllerID: ${resultA.controllerId}`, 'ok');
-                if (resultA.consents) {
-                    log(`[Browser UI] Phase A consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
-                }
-                if (resultA.localStorage) {
-                    log(`[Browser UI] Phase A localStorage keys: ${Object.keys(resultA.localStorage).join(', ')}`);
-                }
-            } else if (resultA.success && !resultA.controllerId) {
-                log(`[Browser UI] Phase A — CMP loaded but no controllerID found!`, 'warn');
-                log(`[Browser UI] localStorage keys: ${resultA.localStorage ? Object.keys(resultA.localStorage).join(', ') : 'none'}`);
-                if (resultA.consents) {
-                    log(`[Browser UI] Consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
-                }
+            report.phaseA = await runInIframe(buildPhaseA(sid));
+            if (report.phaseA.success && report.phaseA.controllerId) {
+                log(`Phase A OK — controllerID: ${report.phaseA.controllerId}`, 'ok');
+                log(`Consents: ${report.phaseA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
             } else {
-                log(`[Browser UI] Phase A FAILED: ${resultA.error}`, 'fail');
+                log(`Phase A FAILED: ${report.phaseA.error || 'no controllerID'}`, 'fail');
+                btn.disabled = false; return;
             }
-        } catch (err) {
-            log(`[Browser UI] Phase A ERROR: ${err.message}`, 'fail');
-            report.browserUI.phaseA = { success: false, error: err.message };
+        } catch (e) {
+            log(`Phase A ERROR: ${e.message}`, 'fail');
+            btn.disabled = false; return;
         }
 
+        const cid = report.phaseA.controllerId;
         await sleep(2000);
 
-        // Phase B (only if Phase A got a controllerID)
-        const cidBrowserUI = report.browserUI.phaseA?.controllerId;
-        if (cidBrowserUI) {
-            log(`[Browser UI] Phase B: Loading CMP for ${sidB} with data-controller-id="${cidBrowserUI}"...`);
-            status.textContent = 'Browser UI: Phase B...';
-            try {
-                const resultB = await runInIframe(buildPhaseB_BrowserUI(sidB, cidBrowserUI), 35000);
-                report.browserUI.phaseB = resultB;
-
-                if (resultB.success) {
-                    const consentRequired = resultB.isConsentRequired;
-                    log(`[Browser UI] Phase B — isConsentRequired: ${consentRequired}`, consentRequired ? 'fail' : 'ok');
-                    log(`[Browser UI] Phase B — controllerID: ${resultB.controllerId || '—'}`);
-
-                    if (resultB.consents) {
-                        const allTrue = resultB.consents.every(s => s.consent === true);
-                        log(`[Browser UI] Phase B consents: ${resultB.consents.map(s => s.name + '=' + s.consent).join(', ')}`,
-                            allTrue ? 'ok' : 'warn');
-                    }
-
-                    if (resultB.networkLog && resultB.networkLog.length > 0) {
-                        resultB.networkLog.forEach(n => {
-                            const short = n.url.split('?')[0];
-                            log(`[Browser UI] Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
-                        });
-                    }
-
-                    if (!consentRequired) {
-                        log('[Browser UI] ✓ CDCS WORKING — banner will NOT show on Device B', 'ok');
-                    } else {
-                        log('[Browser UI] ✗ CDCS NOT WORKING — banner WILL show again on Device B', 'fail');
-                    }
-                } else {
-                    log(`[Browser UI] Phase B FAILED: ${resultB.error}`, 'fail');
-                }
-            } catch (err) {
-                log(`[Browser UI] Phase B ERROR: ${err.message}`, 'fail');
-                report.browserUI.phaseB = { success: false, error: err.message };
-            }
-        } else {
-            log('[Browser UI] Skipping Phase B — no controllerID from Phase A', 'warn');
-        }
-
-        await sleep(2000);
-
-        // ────────────────────────────────────────
-        // TEST 2: Browser SDK (for comparison)
-        // ────────────────────────────────────────
+        // ── Method 1: data-controller-id ──
         log('', '');
-        log('═══ TEST 2: Browser SDK (npm bundle, for comparison) ═══', 'info');
-
-        // Phase A
-        log(`[Browser SDK] Phase A: Loading SDK for ${sidA}, will accept all...`);
-        status.textContent = 'Browser SDK: Phase A...';
+        log('═══ METHOD 1: data-controller-id attribute on script tag ═══', 'info');
+        log('(This is the documented approach for Web CMP CDCS)', '');
+        status.textContent = 'Method 1...';
         try {
-            const resultA = await runInIframe(buildPhaseA_BrowserSDK(sidA), 30000);
-            report.browserSDK.phaseA = resultA;
-
-            if (resultA.success && resultA.controllerId) {
-                log(`[Browser SDK] Phase A OK — controllerID: ${resultA.controllerId}`, 'ok');
-                if (resultA.consents) {
-                    log(`[Browser SDK] Phase A consents: ${resultA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
-                }
-            } else {
-                log(`[Browser SDK] Phase A FAILED: ${resultA.error || 'no controllerID'}`, 'fail');
-            }
-        } catch (err) {
-            log(`[Browser SDK] Phase A ERROR: ${err.message}`, 'fail');
-            report.browserSDK.phaseA = { success: false, error: err.message };
+            report.method1 = await runInIframe(buildMethod1(sid, cid));
+            logMethodResult(1, report.method1);
+        } catch (e) {
+            log(`Method 1 ERROR: ${e.message}`, 'fail');
+            report.method1 = { success: false, error: e.message };
         }
 
-        await sleep(1500);
+        await sleep(2000);
 
-        // Phase B
-        const cidBrowserSDK = report.browserSDK.phaseA?.controllerId;
-        if (cidBrowserSDK) {
-            log(`[Browser SDK] Phase B: Loading SDK for ${sidB} with controllerID: ${cidBrowserSDK.substring(0, 20)}...`);
-            status.textContent = 'Browser SDK: Phase B...';
-            try {
-                const resultB = await runInIframe(buildPhaseB_BrowserSDK(sidB, cidBrowserSDK), 30000);
-                report.browserSDK.phaseB = resultB;
-
-                if (resultB.success) {
-                    const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
-                    const ln = layerNames[resultB.initialLayer] ?? resultB.initialLayer;
-                    const shouldCollect = resultB.initialLayer !== 2;
-
-                    log(`[Browser SDK] Phase B — initialLayer: ${resultB.initialLayer} (${ln})`, shouldCollect ? 'fail' : 'ok');
-                    log(`[Browser SDK] Phase B — controllerID: ${resultB.controllerId || '—'}`);
-
-                    if (resultB.consents) {
-                        log(`[Browser SDK] Phase B consents: ${resultB.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
-                    }
-
-                    if (resultB.networkLog && resultB.networkLog.length > 0) {
-                        resultB.networkLog.forEach(n => {
-                            const short = n.url.split('?')[0];
-                            log(`[Browser SDK] Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
-                        });
-                    }
-
-                    if (!shouldCollect) {
-                        log('[Browser SDK] ✓ CDCS WORKING — shouldCollectConsent=false', 'ok');
-                    } else {
-                        log('[Browser SDK] ✗ CDCS NOT WORKING — shouldCollectConsent=true', 'fail');
-                    }
-                } else {
-                    log(`[Browser SDK] Phase B FAILED: ${resultB.error}`, 'fail');
-                }
-            } catch (err) {
-                log(`[Browser SDK] Phase B ERROR: ${err.message}`, 'fail');
-                report.browserSDK.phaseB = { success: false, error: err.message };
-            }
-        } else {
-            log('[Browser SDK] Skipping Phase B — no controllerID from Phase A', 'warn');
+        // ── Method 2: UC_UI.restoreUserSession() ──
+        log('', '');
+        log('═══ METHOD 2: UC_UI.restoreUserSession() after init ═══', 'info');
+        log("(This is what Wooga uses — load Browser UI, then call restoreUserSession)", '');
+        status.textContent = 'Method 2...';
+        try {
+            report.method2 = await runInIframe(buildMethod2(sid, cid));
+            logMethod2Result(report.method2);
+        } catch (e) {
+            log(`Method 2 ERROR: ${e.message}`, 'fail');
+            report.method2 = { success: false, error: e.message };
         }
 
-        // ────────────────────────────────────────
-        // Summary
-        // ────────────────────────────────────────
+        await sleep(2000);
+
+        // ── Method 3: Browser SDK restoreUserSession() ──
+        log('', '');
+        log('═══ METHOD 3: Browser SDK restoreUserSession() ═══', 'info');
+        log('(Browser SDK npm package — for comparison)', '');
+        status.textContent = 'Method 3...';
+        try {
+            report.method3 = await runInIframe(buildMethod3(sid, cid));
+            logMethodResult(3, report.method3);
+        } catch (e) {
+            log(`Method 3 ERROR: ${e.message}`, 'fail');
+            report.method3 = { success: false, error: e.message };
+        }
+
         status.textContent = 'Done.';
         renderSummary(report);
         btn.disabled = false;
     }
 
+    function logMethodResult(num, r) {
+        if (!r.success) {
+            log(`Method ${num} FAILED: ${r.error}`, 'fail');
+            return;
+        }
+        log(`Method ${num} — isConsentRequired: ${r.isConsentRequired}`, r.isConsentRequired === false ? 'ok' : 'fail');
+        log(`Method ${num} — controllerID: ${r.controllerId || '—'}`);
+
+        if (r.consents) {
+            const allTrue = r.consents.every(s => s.consent === true);
+            log(`Method ${num} — consents: ${r.consents.map(s => s.name + '=' + s.consent).join(', ')}`, allTrue ? 'ok' : 'warn');
+        }
+
+        if (r.networkLog && r.networkLog.length > 0) {
+            r.networkLog.forEach(n => {
+                const short = n.url.split('?')[0];
+                log(`Method ${num} — Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
+            });
+        }
+
+        if (r.isConsentRequired === false) {
+            log(`Method ${num} ✓ CDCS WORKING`, 'ok');
+        } else {
+            log(`Method ${num} ✗ CDCS NOT WORKING`, 'fail');
+        }
+    }
+
+    function logMethod2Result(r) {
+        log(`Method 2 — UC_UI.restoreUserSession exists: ${r.hasRestoreUserSession}`, r.hasRestoreUserSession ? 'ok' : 'fail');
+
+        if (r.availableMethods) {
+            log(`Method 2 — All UC_UI methods: ${r.availableMethods.join(', ')}`);
+        }
+
+        if (!r.hasRestoreUserSession) {
+            log('Method 2 — UC_UI.restoreUserSession() does NOT exist on the UC_UI object', 'fail');
+            log('Method 2 ✗ CANNOT TEST — function does not exist', 'fail');
+            return;
+        }
+
+        log(`Method 2 — restoreUserSession() returned: ${r.restoreReturn}`);
+        if (r.restoreError) {
+            log(`Method 2 — restoreUserSession() error: ${r.restoreError}`, 'fail');
+        }
+        if (r.restoreValue) {
+            log(`Method 2 — restoreUserSession() value: ${r.restoreValue}`);
+        }
+
+        if (r.isConsentRequired !== undefined) {
+            log(`Method 2 — isConsentRequired: ${r.isConsentRequired}`, r.isConsentRequired === false ? 'ok' : 'fail');
+        }
+        log(`Method 2 — controllerID: ${r.controllerId || '—'}`);
+
+        if (r.consents) {
+            const allTrue = r.consents.every(s => s.consent === true);
+            log(`Method 2 — consents: ${r.consents.map(s => s.name + '=' + s.consent).join(', ')}`, allTrue ? 'ok' : 'warn');
+        }
+
+        if (r.networkLog && r.networkLog.length > 0) {
+            r.networkLog.forEach(n => {
+                const short = n.url.split('?')[0];
+                log(`Method 2 — Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
+            });
+        }
+
+        if (r.isConsentRequired === false) {
+            log('Method 2 ✓ CDCS WORKING', 'ok');
+        } else if (r.hasRestoreUserSession) {
+            log('Method 2 ✗ CDCS NOT WORKING (function exists but does not restore consent)', 'fail');
+        }
+    }
+
     function renderSummary(r) {
-        let t = `CDCS TEST REPORT v3\n`;
+        let t = `CDCS METHOD COMPARISON REPORT\n`;
         t += `Generated: ${r.timestamp}\n`;
-        t += `Settings A: ${r.settingsA} → Settings B: ${r.settingsB}\n`;
+        t += `Settings ID: ${r.settingsId}\n`;
+        t += `ControllerID: ${r.phaseA?.controllerId || '—'}\n`;
         t += `${'═'.repeat(60)}\n\n`;
 
-        // Browser UI
-        t += `── CMP V2 BROWSER UI ──\n`;
-        if (r.browserUI.phaseA) {
-            t += `Phase A: ${r.browserUI.phaseA.success ? 'OK' : 'FAILED'}\n`;
-            t += `  controllerID: ${r.browserUI.phaseA.controllerId || '—'}\n`;
-            if (r.browserUI.phaseA.consents) {
-                t += `  consents: ${r.browserUI.phaseA.consents.map(s => s.name + '=' + s.consent).join(', ')}\n`;
-            }
-        }
-        if (r.browserUI.phaseB) {
-            t += `Phase B: ${r.browserUI.phaseB.success ? 'OK' : 'FAILED'}\n`;
-            t += `  isConsentRequired: ${r.browserUI.phaseB.isConsentRequired}\n`;
-            t += `  controllerID: ${r.browserUI.phaseB.controllerId || '—'}\n`;
-            if (r.browserUI.phaseB.consents) {
-                t += `  consents: ${r.browserUI.phaseB.consents.map(s => s.name + '=' + s.consent).join(', ')}\n`;
-            }
-            if (r.browserUI.phaseB.networkLog) {
-                const fails = r.browserUI.phaseB.networkLog.filter(n => n.status === 404 || String(n.status).startsWith('ERR'));
-                if (fails.length) {
-                    t += `  FAILED requests:\n`;
-                    fails.forEach(f => { t += `    [${f.status}] ${f.url.split('?')[0]}\n`; });
-                }
-            }
-            t += `  VERDICT: ${r.browserUI.phaseB.isConsentRequired === false ? '✓ PASS (CDCS working)' : '✗ FAIL (CDCS not working)'}\n`;
-        }
+        // Method 1
+        t += `METHOD 1: data-controller-id attribute\n`;
+        if (r.method1) {
+            t += `  isConsentRequired: ${r.method1.isConsentRequired}\n`;
+            t += `  VERDICT: ${r.method1.isConsentRequired === false ? '✓ PASS' : '✗ FAIL'}\n`;
+        } else { t += '  ERROR\n'; }
 
-        t += `\n── BROWSER SDK ──\n`;
-        if (r.browserSDK.phaseA) {
-            t += `Phase A: ${r.browserSDK.phaseA.success ? 'OK' : 'FAILED'}\n`;
-            t += `  controllerID: ${r.browserSDK.phaseA.controllerId || '—'}\n`;
-        }
-        if (r.browserSDK.phaseB) {
-            const ln = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' }[r.browserSDK.phaseB.initialLayer] ?? '?';
-            const pass = r.browserSDK.phaseB.initialLayer === 2;
-            t += `Phase B: ${r.browserSDK.phaseB.success ? 'OK' : 'FAILED'}\n`;
-            t += `  initialLayer: ${r.browserSDK.phaseB.initialLayer} (${ln})\n`;
-            t += `  controllerID: ${r.browserSDK.phaseB.controllerId || '—'}\n`;
-            if (r.browserSDK.phaseB.networkLog) {
-                const fails = r.browserSDK.phaseB.networkLog.filter(n => n.status === 404 || String(n.status).startsWith('ERR'));
-                if (fails.length) {
-                    t += `  FAILED requests:\n`;
-                    fails.forEach(f => { t += `    [${f.status}] ${f.url.split('?')[0]}\n`; });
-                }
+        t += `\nMETHOD 2: UC_UI.restoreUserSession()\n`;
+        if (r.method2) {
+            t += `  Function exists: ${r.method2.hasRestoreUserSession}\n`;
+            if (r.method2.availableMethods) t += `  All UC_UI methods: ${r.method2.availableMethods.join(', ')}\n`;
+            if (r.method2.hasRestoreUserSession) {
+                t += `  restoreUserSession() returned: ${r.method2.restoreReturn}\n`;
+                if (r.method2.restoreError) t += `  restoreUserSession() error: ${r.method2.restoreError}\n`;
+                t += `  isConsentRequired: ${r.method2.isConsentRequired}\n`;
+                t += `  VERDICT: ${r.method2.isConsentRequired === false ? '✓ PASS' : '✗ FAIL'}\n`;
+            } else {
+                t += `  VERDICT: ✗ FUNCTION DOES NOT EXIST\n`;
             }
-            t += `  VERDICT: ${pass ? '✓ PASS (CDCS working)' : '✗ FAIL (CDCS not working)'}\n`;
-        }
+        } else { t += '  ERROR\n'; }
+
+        t += `\nMETHOD 3: Browser SDK restoreUserSession()\n`;
+        if (r.method3) {
+            t += `  restoreUserSession() returned: ${r.method3.restoreReturn}\n`;
+            if (r.method3.restoreError) t += `  restoreUserSession() error: ${r.method3.restoreError}\n`;
+            if (r.method3.initialLayer !== undefined) {
+                const ln = {0:'FIRST_LAYER',1:'SECOND_LAYER',2:'NONE'}[r.method3.initialLayer] || '?';
+                t += `  initialLayer: ${r.method3.initialLayer} (${ln})\n`;
+            }
+            const pass3 = r.method3.isConsentRequired === false || r.method3.initialLayer === 2;
+            t += `  VERDICT: ${pass3 ? '✓ PASS' : '✗ FAIL'}\n`;
+        } else { t += '  ERROR\n'; }
 
         t += `\n${'═'.repeat(60)}\n`;
+        t += `CONCLUSION:\n`;
+        const m1pass = r.method1?.isConsentRequired === false;
+        const m2exists = r.method2?.hasRestoreUserSession === true;
+        const m2pass = r.method2?.isConsentRequired === false;
+        const m3pass = r.method3?.initialLayer === 2;
+        t += `  data-controller-id:          ${m1pass ? 'WORKS' : 'FAILS'}\n`;
+        t += `  UC_UI.restoreUserSession():   ${!m2exists ? 'DOES NOT EXIST' : (m2pass ? 'WORKS' : 'EXISTS BUT FAILS')}\n`;
+        t += `  Browser SDK restoreSession(): ${m3pass ? 'WORKS' : 'FAILS'}\n`;
 
         document.getElementById('summaryArea').innerHTML = `<div class="summary"><h2 style="font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Test Report</h2><pre>${esc(t)}</pre></div>`;
     }
 </script>
-
 </body>
 </html>
