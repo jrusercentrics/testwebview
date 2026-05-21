@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CDCS Automated Test Runner</title>
+    <title>CDCS Cross-Device Test v2</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
 
@@ -34,7 +34,7 @@
             color: var(--text);
             min-height: 100vh;
             padding: 32px 24px;
-            max-width: 960px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -45,11 +45,7 @@
             margin-bottom: 8px;
         }
 
-        .title-bar h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
+        .title-bar h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
 
         .title-bar .version {
             font-family: var(--mono);
@@ -64,6 +60,7 @@
             color: var(--text-dim);
             font-size: 13px;
             margin-bottom: 28px;
+            line-height: 1.6;
         }
 
         /* ── Input area ── */
@@ -75,50 +72,85 @@
             margin-bottom: 24px;
         }
 
-        .input-area label {
-            display: block;
+        .input-area h2 {
             font-size: 12px;
             font-weight: 600;
             color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.6px;
+            margin-bottom: 14px;
+        }
+
+        .pair-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            gap: 8px;
+            align-items: end;
             margin-bottom: 8px;
         }
 
-        .input-area textarea {
+        .pair-row label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            font-family: var(--mono);
+        }
+
+        .pair-row input {
             width: 100%;
-            min-height: 80px;
+            padding: 8px 10px;
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text);
             font-family: var(--mono);
-            font-size: 13px;
-            padding: 12px;
-            resize: vertical;
+            font-size: 12px;
             outline: none;
-            line-height: 1.6;
         }
 
-        .input-area textarea:focus {
-            border-color: var(--blue);
-        }
+        .pair-row input:focus { border-color: var(--blue); }
+        .pair-row input::placeholder { color: #3a4050; }
 
-        .input-area textarea::placeholder {
-            color: #3a4050;
-        }
-
-        .input-area .hint {
-            font-size: 11px;
+        .pair-row .arrow {
             color: var(--text-dim);
-            margin-top: 6px;
+            font-size: 18px;
+            padding-bottom: 6px;
+            text-align: center;
         }
+
+        .pair-row .btn-remove {
+            padding: 8px;
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .pair-row .btn-remove:hover { color: var(--red); border-color: var(--red); }
+
+        .add-pair {
+            font-size: 12px;
+            color: var(--blue);
+            background: none;
+            border: 1px dashed var(--border);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+            font-family: var(--sans);
+        }
+
+        .add-pair:hover { border-color: var(--blue); }
 
         .run-row {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 14px;
+            margin-top: 16px;
         }
 
         .btn-run {
@@ -131,7 +163,6 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.15s;
         }
 
         .btn-run:hover { opacity: 0.85; }
@@ -143,7 +174,7 @@
             color: var(--text-dim);
         }
 
-        /* ── Test results ── */
+        /* ── Test cards ── */
         .results-area {
             display: flex;
             flex-direction: column;
@@ -169,15 +200,19 @@
             align-items: center;
             padding: 14px 18px;
             border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .test-card-header .sid {
+        .test-card-header .pair-label {
             font-family: var(--mono);
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
         }
 
-        .test-card-header .verdict {
+        .pair-label .dim { color: var(--text-dim); }
+
+        .verdict {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
@@ -214,11 +249,9 @@
         .step-icon {
             flex-shrink: 0;
             width: 16px;
-            height: 16px;
-            margin-top: 1px;
             text-align: center;
             font-size: 12px;
-            line-height: 16px;
+            line-height: 20px;
         }
 
         .step-icon.pending { color: var(--text-dim); }
@@ -226,38 +259,35 @@
         .step-icon.ok { color: var(--green); }
         .step-icon.fail { color: var(--red); }
         .step-icon.warn { color: var(--amber); }
+        .step-icon.info { color: var(--blue); }
 
-        .step-text { flex: 1; }
+        .step-text { flex: 1; word-break: break-word; }
         .step-text .detail {
             color: var(--text-dim);
             font-size: 11px;
             display: block;
             margin-top: 2px;
-            word-break: break-all;
         }
-
         .step-text .error-detail {
             color: var(--red);
             font-size: 11px;
             display: block;
             margin-top: 2px;
-            word-break: break-all;
         }
 
-        /* Network log */
-        .network-section {
+        .net-section {
             padding: 12px 18px;
             border-top: 1px solid var(--border);
         }
 
-        .network-section summary {
+        .net-section summary {
             font-size: 11px;
             color: var(--text-dim);
             cursor: pointer;
             font-family: var(--mono);
         }
 
-        .network-log {
+        .net-log {
             margin-top: 8px;
             font-family: var(--mono);
             font-size: 11px;
@@ -267,37 +297,21 @@
             overflow-y: auto;
         }
 
-        .network-log .req {
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(38,44,54,0.3);
-        }
+        .net-log .req { padding: 3px 0; border-bottom: 1px solid rgba(38,44,54,0.3); word-break: break-all; }
+        .net-log .req.error { color: var(--red); }
 
-        .network-log .req.error { color: var(--red); }
-        .network-log .req.ok { color: var(--text-dim); }
-
-        /* Spinner */
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid var(--blue);
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
 
-        /* Summary */
         .summary-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 20px;
-            margin-top: 8px;
+            margin-top: 16px;
         }
 
         .summary-card h2 {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             margin-bottom: 12px;
             color: var(--text-dim);
@@ -317,21 +331,22 @@
 <body>
 
 <div class="title-bar">
-    <h1>CDCS Automated Test</h1>
-    <span class="version">Browser SDK v2.12.1</span>
+    <h1>CDCS Cross-Device Test</h1>
+    <span class="version">v2 — Browser SDK 2.12.1</span>
 </div>
-<p class="subtitle">Enter Settings IDs below and click Run. Each ID gets a fully automated test: init → accept all → clear storage → restore with controllerID → verify consents.</p>
+<p class="subtitle">
+    Tests cross-device consent sharing between two <strong>different</strong> Settings IDs (simulating mobile → web).<br>
+    Device A: init + accept all → capture controllerID.<br>
+    Device B: init with that controllerID on a different Settings ID → verify consent is restored and shouldCollectConsent is false.<br>
+    Respects the one-time restoration rule: each test pair uses a fresh controllerID.
+</p>
 
 <div class="input-area">
-    <label>Settings IDs (one per line)</label>
-    <textarea id="settingsInput" placeholder="tIkRJxexTam6P8
-PIsxCtDSMLX4O1
-m6JGswqWVee2Ho">tIkRJxexTam6P8
-PIsxCtDSMLX4O1
-m6JGswqWVee2Ho
-noA23m0yw3N9mk
-fzqn_OViVHqQHO</textarea>
-    <div class="hint">One Settings ID per line. CCPA configs excluded. Empty lines are ignored.</div>
+    <h2>Test Pairs — Device A (source) → Device B (restore target)</h2>
+    <div id="pairsContainer">
+        <!-- Pairs injected by JS -->
+    </div>
+    <button class="add-pair" onclick="addPairRow()">+ Add pair</button>
     <div class="run-row">
         <button class="btn-run" id="btnRun" onclick="runAllTests()">Run All Tests</button>
         <span class="global-status" id="globalStatus"></span>
@@ -342,351 +357,432 @@ fzqn_OViVHqQHO</textarea>
 <div id="summaryArea"></div>
 
 <script>
-    // ─── We load the SDK dynamically so we can detect load failures ───
-    let sdkLoaded = false;
+    // ══════════════════════════════════════════════════
+    // Default pairs from the ticket: mobile → web
+    // ══════════════════════════════════════════════════
+    const DEFAULT_PAIRS = [
+        { a: '3V6ZqxlVhq8kAw', b: 'tIkRJxexTam6P8', label: "June's Journey: Mobile → Web (Facebook)" },
+        { a: '3V6ZqxlVhq8kAw', b: 'PIsxCtDSMLX4O1', label: "June's Journey: Mobile → Web" },
+        { a: '3V6ZqxlVhq8kAw', b: 'm6JGswqWVee2Ho', label: "June's Journey: Mobile → Web" },
+        { a: 'tIkRJxexTam6P8', b: 'tIkRJxexTam6P8', label: "June's Journey: Same ID (control test)" },
+    ];
+
+    let pairCount = 0;
+
+    function addPairRow(a = '', b = '', label = '') {
+        const c = document.getElementById('pairsContainer');
+        const id = pairCount++;
+        const div = document.createElement('div');
+        div.className = 'pair-row';
+        div.id = `pair-${id}`;
+        div.innerHTML = `
+            <div>
+                ${id === 0 ? '<label>Device A (source)</label>' : ''}
+                <input type="text" id="pairA-${id}" value="${esc(a)}" placeholder="Mobile Settings ID" />
+            </div>
+            <div class="arrow">${id === 0 ? '<br>' : ''}→</div>
+            <div>
+                ${id === 0 ? '<label>Device B (restore)</label>' : ''}
+                <input type="text" id="pairB-${id}" value="${esc(b)}" placeholder="Web Settings ID" />
+            </div>
+            <button class="btn-remove" onclick="document.getElementById('pair-${id}').remove()">✕</button>
+        `;
+        c.appendChild(div);
+    }
+
+    DEFAULT_PAIRS.forEach(p => addPairRow(p.a, p.b));
+
+    // ══════════════════════════════════════════════════
+    // SDK loader
+    // ══════════════════════════════════════════════════
     let sdkLoadPromise = null;
 
     function loadSDK() {
         if (sdkLoadPromise) return sdkLoadPromise;
         sdkLoadPromise = new Promise((resolve, reject) => {
-            if (typeof UC_SDK !== 'undefined') { sdkLoaded = true; resolve(); return; }
+            if (typeof UC_SDK !== 'undefined') { resolve(); return; }
             const s = document.createElement('script');
             s.src = 'https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js';
-            s.onload = () => { sdkLoaded = true; resolve(); };
-            s.onerror = () => reject(new Error('Failed to load Browser SDK from app.usercentrics.eu'));
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Failed to load Browser SDK'));
             document.head.appendChild(s);
         });
         return sdkLoadPromise;
     }
 
-    // ─── Utility: clear ALL UC-related localStorage ───
-    function clearUCStorage() {
-        const toRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.startsWith('uc_') || key.startsWith('UC_') || key.includes('usercentrics') || key.includes('Usercentrics'))) {
-                toRemove.push(key);
-            }
-        }
-        toRemove.forEach(k => localStorage.removeItem(k));
-        return toRemove.length;
-    }
-
-    // ─── Intercept network requests for consentState ───
-    function createNetworkInterceptor() {
+    // ══════════════════════════════════════════════════
+    // Network interceptor
+    // ══════════════════════════════════════════════════
+    function createNetInterceptor() {
         const log = [];
         const origFetch = window.fetch;
-
-        const interceptedFetch = function(...args) {
+        const intercepted = function (...args) {
             const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-            const isRelevant = url.includes('consentState') || url.includes('consentsHistory') || url.includes('consentStatus');
-
-            if (isRelevant) {
-                const entry = { url: url.split('?')[0], params: url.split('?')[1] || '', status: null, ok: null, error: null, timestamp: new Date().toLocaleTimeString('en-GB', { hour12: false }) };
+            const relevant = url.includes('consent') || url.includes('Consent');
+            if (relevant) {
+                const entry = { url, status: null, ok: null, error: null, ts: new Date().toLocaleTimeString('en-GB', { hour12: false }) };
                 log.push(entry);
-                return origFetch.apply(this, args).then(resp => {
-                    entry.status = resp.status;
-                    entry.ok = resp.ok;
-                    return resp;
-                }).catch(err => {
-                    entry.error = err.message;
-                    throw err;
-                });
+                return origFetch.apply(this, args).then(r => { entry.status = r.status; entry.ok = r.ok; return r; }).catch(e => { entry.error = e.message; throw e; });
             }
             return origFetch.apply(this, args);
         };
-
         return {
-            install() { window.fetch = interceptedFetch; },
+            install() { window.fetch = intercepted; },
             restore() { window.fetch = origFetch; },
             getLog() { return log; }
         };
     }
 
-    // ─── DOM helpers ───
+    // ══════════════════════════════════════════════════
+    // DOM helpers
+    // ══════════════════════════════════════════════════
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function createTestCard(settingsId, index) {
+    function createTestCard(pair, idx) {
         const card = document.createElement('div');
         card.className = 'test-card';
-        card.id = `card-${index}`;
+        card.id = `card-${idx}`;
         card.innerHTML = `
             <div class="test-card-header">
-                <span class="sid">${esc(settingsId)}</span>
-                <span class="verdict queued" id="verdict-${index}">QUEUED</span>
+                <span class="pair-label">
+                    <span class="dim">A:</span> ${esc(pair.a)} <span class="dim">→ B:</span> ${esc(pair.b)}
+                </span>
+                <span class="verdict queued" id="verdict-${idx}">QUEUED</span>
             </div>
-            <ul class="test-steps" id="steps-${index}">
-                <li class="test-step" id="step-${index}-0"><span class="step-icon pending">○</span><span class="step-text">Clear localStorage</span></li>
-                <li class="test-step" id="step-${index}-1"><span class="step-icon pending">○</span><span class="step-text">Init SDK (new session)</span></li>
-                <li class="test-step" id="step-${index}-2"><span class="step-icon pending">○</span><span class="step-text">Accept All services</span></li>
-                <li class="test-step" id="step-${index}-3"><span class="step-icon pending">○</span><span class="step-text">Read controllerID + consents (Device A)</span></li>
-                <li class="test-step" id="step-${index}-4"><span class="step-icon pending">○</span><span class="step-text">Clear localStorage + reset SDK</span></li>
-                <li class="test-step" id="step-${index}-5"><span class="step-icon pending">○</span><span class="step-text">Init SDK with controllerID (Device B restore)</span></li>
-                <li class="test-step" id="step-${index}-6"><span class="step-icon pending">○</span><span class="step-text">Verify restored consents match Device A</span></li>
-                <li class="test-step" id="step-${index}-7"><span class="step-icon pending">○</span><span class="step-text">Check shouldCollectConsent == false</span></li>
-            </ul>
-            <div class="network-section">
-                <details>
-                    <summary>Network log (consentState requests)</summary>
-                    <div class="network-log" id="netlog-${index}">—</div>
-                </details>
+            <ul class="test-steps" id="steps-${idx}"></ul>
+            <div class="net-section">
+                <details><summary>Network log (consent-related requests)</summary>
+                <div class="net-log" id="netlog-${idx}">—</div></details>
             </div>
         `;
         return card;
     }
 
-    function setStep(index, step, icon, text, detail, detailClass) {
-        const el = document.getElementById(`step-${index}-${step}`);
-        if (!el) return;
-        const iconMap = { pending: '○', running: '◉', ok: '✓', fail: '✗', warn: '⚠' };
-        el.querySelector('.step-icon').className = `step-icon ${icon}`;
-        el.querySelector('.step-icon').textContent = iconMap[icon] || '○';
-        if (text) {
-            let html = esc(text);
-            if (detail) {
-                html += `<span class="${detailClass === 'error' ? 'error-detail' : 'detail'}">${esc(detail)}</span>`;
-            }
-            el.querySelector('.step-text').innerHTML = html;
-        }
+    function addStep(idx, icon, text, detail, isError) {
+        const ul = document.getElementById(`steps-${idx}`);
+        if (!ul) return;
+        const iconMap = { pending: '○', running: '◉', ok: '✓', fail: '✗', warn: '⚠', info: 'ℹ' };
+        const li = document.createElement('li');
+        li.className = 'test-step';
+        let html = `<span class="step-icon ${icon}">${iconMap[icon] || '○'}</span><span class="step-text">${esc(text)}`;
+        if (detail) html += `<span class="${isError ? 'error-detail' : 'detail'}">${esc(detail)}</span>`;
+        html += '</span>';
+        li.innerHTML = html;
+        ul.appendChild(li);
+        li.scrollIntoView({ block: 'nearest' });
     }
 
-    function setVerdict(index, verdict) {
-        const el = document.getElementById(`verdict-${index}`);
-        const card = document.getElementById(`card-${index}`);
-        if (el) { el.className = `verdict ${verdict}`; el.textContent = verdict.toUpperCase(); }
-        if (card) { card.className = `test-card ${verdict}`; }
+    function setVerdict(idx, v) {
+        const el = document.getElementById(`verdict-${idx}`);
+        const card = document.getElementById(`card-${idx}`);
+        if (el) { el.className = `verdict ${v}`; el.textContent = v.toUpperCase(); }
+        if (card) { card.className = `test-card ${v}`; }
     }
 
-    function renderNetLog(index, entries) {
-        const el = document.getElementById(`netlog-${index}`);
+    function renderNetLog(idx, entries) {
+        const el = document.getElementById(`netlog-${idx}`);
         if (!el) return;
-        if (entries.length === 0) { el.textContent = 'No consentState/consentsHistory requests captured.'; return; }
+        if (!entries.length) { el.textContent = 'No consent-related requests captured.'; return; }
         el.innerHTML = entries.map(e => {
-            const cls = e.ok === false || e.error ? 'error' : 'ok';
-            const status = e.error ? `ERR: ${e.error}` : `${e.status}`;
-            return `<div class="req ${cls}">${e.timestamp} ${status} ${e.url}?${e.params}</div>`;
+            const cls = (e.ok === false || e.error) ? 'error' : '';
+            const st = e.error ? `ERR: ${e.error}` : `${e.status}`;
+            const short = e.url.length > 120 ? e.url.substring(0, 120) + '…' : e.url;
+            return `<div class="req ${cls}">${e.ts} [${st}] ${short}</div>`;
         }).join('');
     }
 
-    // ─── Single test runner ───
-    async function runSingleTest(settingsId, index) {
-        const results = {
-            settingsId,
+    // ══════════════════════════════════════════════════
+    // Clear ALL UC storage
+    // ══════════════════════════════════════════════════
+    function nukeStorage() {
+        localStorage.clear();
+        // Also try sessionStorage
+        try { sessionStorage.clear(); } catch (e) {}
+    }
+
+    // ══════════════════════════════════════════════════
+    // Single test: Device A → Device B
+    // ══════════════════════════════════════════════════
+    async function runPairTest(pair, idx) {
+        const res = {
+            settingsA: pair.a,
+            settingsB: pair.b,
             controllerIdA: null,
-            consentsA: null,
+            consentsA: [],
             controllerIdB: null,
-            consentsB: null,
-            shouldCollectB: null,
+            consentsB: [],
             initialLayerB: null,
+            shouldCollectB: null,
+            consentMatch: null,
             errors: [],
+            networkIssues: [],
             verdict: 'unknown'
         };
 
-        const net = createNetworkInterceptor();
+        const net = createNetInterceptor();
         net.install();
 
         try {
-            setVerdict(index, 'running');
+            setVerdict(idx, 'running');
 
-            // ── Step 0: Clear storage ──
-            setStep(index, 0, 'running', 'Clearing localStorage...');
-            const removed = clearUCStorage();
-            localStorage.clear(); // nuclear option for clean test
-            setStep(index, 0, 'ok', 'Clear localStorage', `Removed ${removed} UC keys + full clear`);
+            // ── 1. Clean slate ──
+            addStep(idx, 'running', 'Clearing all storage...');
+            nukeStorage();
+            addStep(idx, 'ok', 'Storage cleared (localStorage + sessionStorage)');
 
-            // ── Step 1: Init SDK new session ──
-            setStep(index, 1, 'running', 'Initializing SDK (new session)...');
+            // ── 2. Init Device A ──
+            addStep(idx, 'running', `Device A: Initializing SDK with ${pair.a}...`);
             let ucA;
             try {
-                ucA = new UC_SDK.default(settingsId);
-                var initA = await withTimeout(ucA.init(), 20000, 'init() timeout after 20s');
-                setStep(index, 1, 'ok', 'Init SDK (new session)', `initialLayer: ${initA.initialLayer}, variant: ${initA.variant}`);
+                ucA = new UC_SDK.default(pair.a);
+                const initA = await withTimeout(ucA.init(), 25000, 'Device A init timeout (25s)');
+                addStep(idx, 'ok', `Device A: SDK initialized`, `initialLayer: ${initA.initialLayer}`);
             } catch (err) {
-                setStep(index, 1, 'fail', 'Init SDK (new session)', err.message, 'error');
-                results.errors.push(`Step 1 init failed: ${err.message}`);
+                addStep(idx, 'fail', `Device A: Init failed`, err.message, true);
+                res.errors.push(`Device A init: ${err.message}`);
                 throw err;
             }
 
-            // ── Step 2: Accept All ──
-            setStep(index, 2, 'running', 'Accepting all services...');
+            // ── 3. Accept All on Device A ──
+            addStep(idx, 'running', 'Device A: Accepting all services...');
             try {
                 ucA.acceptAllServices();
-                setStep(index, 2, 'ok', 'Accept All services');
+                addStep(idx, 'ok', 'Device A: Accepted all services');
             } catch (err) {
-                setStep(index, 2, 'fail', 'Accept All services', err.message, 'error');
-                results.errors.push(`Step 2 acceptAll failed: ${err.message}`);
+                addStep(idx, 'fail', 'Device A: acceptAllServices failed', err.message, true);
+                res.errors.push(`Device A acceptAll: ${err.message}`);
                 throw err;
             }
 
-            // ── Step 3: Read Device A state ──
-            setStep(index, 3, 'running', 'Reading controllerID + consents...');
+            // ── 4. Read state from Device A ──
+            addStep(idx, 'running', 'Device A: Reading controllerID and consents...');
             try {
-                const settingsA = ucA.getSettings();
-                results.controllerIdA = settingsA?.controllerId || null;
-                const servicesA = ucA.getServicesBaseInfo();
-                results.consentsA = servicesA.map(s => ({ name: s.name, id: s.id, consent: s.consent, isEssential: s.isEssential }));
-                const allTrue = results.consentsA.every(s => s.consent === true);
-                setStep(index, 3, allTrue ? 'ok' : 'warn',
-                    'Read controllerID + consents (Device A)',
-                    `controllerID: ${results.controllerIdA}\nServices: ${results.consentsA.map(s => `${s.name}=${s.consent}`).join(', ')}`
-                );
-                if (!results.controllerIdA) {
-                    results.errors.push('No controllerID returned after acceptAll');
+                const settings = ucA.getSettings();
+                res.controllerIdA = settings?.controllerId || null;
+
+                const services = ucA.getServicesBaseInfo();
+                res.consentsA = services.map(s => ({
+                    name: s.name,
+                    id: s.id,
+                    consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent
+                }));
+
+                addStep(idx, 'ok', 'Device A: State captured',
+                    `controllerID: ${res.controllerIdA}\nConsents: ${res.consentsA.map(s => s.name + '=' + s.consent).join(', ')}`);
+
+                if (!res.controllerIdA) {
+                    res.errors.push('Device A: no controllerID after acceptAll');
                     throw new Error('No controllerID');
                 }
             } catch (err) {
-                if (!results.controllerIdA) {
-                    setStep(index, 3, 'fail', 'Read controllerID + consents (Device A)', err.message, 'error');
-                    results.errors.push(`Step 3 read state failed: ${err.message}`);
+                if (!res.controllerIdA) {
+                    addStep(idx, 'fail', 'Device A: Failed to read state', err.message, true);
                     throw err;
                 }
             }
 
-            // ── Step 4: Clear storage + destroy SDK instance ──
-            setStep(index, 4, 'running', 'Clearing localStorage + resetting SDK...');
+            // ── 5. Destroy Device A, nuke storage ──
+            addStep(idx, 'running', 'Destroying Device A session, clearing all storage...');
             ucA = null;
-            localStorage.clear();
-            clearUCStorage();
-            // Small pause to ensure cleanup
-            await sleep(500);
-            setStep(index, 4, 'ok', 'Clear localStorage + reset SDK', 'Full localStorage cleared to simulate different device');
+            nukeStorage();
+            await sleep(800);
+            addStep(idx, 'ok', 'Device A destroyed, all storage cleared',
+                'Simulating a completely different device with no local data');
 
-            // ── Step 5: Init with controllerID (Device B) ──
-            setStep(index, 5, 'running', `Initializing SDK with controllerID: ${results.controllerIdA.substring(0, 16)}...`);
+            // ── 6. Init Device B with controllerID from A ──
+            addStep(idx, 'running', `Device B: Initializing SDK with ${pair.b} + controllerID from Device A...`);
+            addStep(idx, 'info', 'This is the critical CDCS test',
+                `Settings ID B: ${pair.b}\ncontrollerID: ${res.controllerIdA}\nIf CDCS works, consent should be restored and shouldCollectConsent should be false`);
+
             let ucB;
             try {
-                ucB = new UC_SDK.default(settingsId, { controllerId: results.controllerIdA });
-                var initB = await withTimeout(ucB.init(), 20000, 'init() with controllerID timeout after 20s');
-                results.initialLayerB = initB.initialLayer;
-                setStep(index, 5, 'ok', 'Init SDK with controllerID (Device B restore)',
-                    `initialLayer: ${initB.initialLayer}, variant: ${initB.variant}`);
+                ucB = new UC_SDK.default(pair.b, { controllerId: res.controllerIdA });
+                const initB = await withTimeout(ucB.init(), 25000, 'Device B init timeout (25s)');
+                res.initialLayerB = initB.initialLayer;
+
+                const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
+                const layerName = layerNames[initB.initialLayer] ?? initB.initialLayer;
+
+                addStep(idx, initB.initialLayer === 2 ? 'ok' : 'warn',
+                    `Device B: SDK initialized`,
+                    `initialLayer: ${initB.initialLayer} (${layerName})`);
             } catch (err) {
-                setStep(index, 5, 'fail', 'Init SDK with controllerID (Device B restore)', err.message, 'error');
-                results.errors.push(`Step 5 restore init failed: ${err.message}`);
+                addStep(idx, 'fail', 'Device B: Init with controllerID failed', err.message, true);
+                res.errors.push(`Device B init: ${err.message}`);
                 throw err;
             }
 
-            // ── Step 6: Verify consents restored ──
-            setStep(index, 6, 'running', 'Verifying consents match Device A...');
+            // ── 7. Read Device B consents ──
+            addStep(idx, 'running', 'Device B: Reading consents after restore...');
             try {
                 const settingsB = ucB.getSettings();
-                results.controllerIdB = settingsB?.controllerId || null;
-                const servicesB = ucB.getServicesBaseInfo();
-                results.consentsB = servicesB.map(s => ({ name: s.name, id: s.id, consent: s.consent, isEssential: s.isEssential }));
+                res.controllerIdB = settingsB?.controllerId || null;
 
-                // Compare
-                let mismatches = [];
-                for (const sA of results.consentsA) {
-                    const sB = results.consentsB.find(b => b.id === sA.id);
-                    if (!sB) {
-                        mismatches.push(`${sA.name}: missing on Device B`);
-                    } else if (sA.consent !== sB.consent) {
-                        mismatches.push(`${sA.name}: Device A=${sA.consent}, Device B=${sB.consent}`);
+                const servicesB = ucB.getServicesBaseInfo();
+                res.consentsB = servicesB.map(s => ({
+                    name: s.name,
+                    id: s.id,
+                    consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent
+                }));
+
+                addStep(idx, 'ok', 'Device B: State read',
+                    `controllerID B: ${res.controllerIdB}\nConsents: ${res.consentsB.map(s => s.name + '=' + s.consent).join(', ')}`);
+            } catch (err) {
+                addStep(idx, 'fail', 'Device B: Failed to read state', err.message, true);
+                res.errors.push(`Device B read: ${err.message}`);
+            }
+
+            // ── 8. Compare consents ──
+            addStep(idx, 'running', 'Comparing Device A vs Device B consents...');
+
+            // Find matching services by template ID
+            let matched = 0;
+            let mismatches = [];
+
+            for (const sA of res.consentsA) {
+                const sB = res.consentsB.find(b => b.id === sA.id);
+                if (sB) {
+                    matched++;
+                    if (sA.consent !== sB.consent) {
+                        mismatches.push(`${sA.name} (${sA.id}): A=${sA.consent}, B=${sB.consent}`);
                     }
                 }
-
-                if (mismatches.length === 0) {
-                    setStep(index, 6, 'ok', 'Verify restored consents match Device A',
-                        `All ${results.consentsB.length} services match. controllerID B: ${results.controllerIdB}`);
-                } else {
-                    setStep(index, 6, 'fail', 'Verify restored consents match Device A',
-                        `MISMATCHES:\n${mismatches.join('\n')}`, 'error');
-                    results.errors.push(`Consent mismatch: ${mismatches.join('; ')}`);
-                }
-            } catch (err) {
-                setStep(index, 6, 'fail', 'Verify restored consents match Device A', err.message, 'error');
-                results.errors.push(`Step 6 verify failed: ${err.message}`);
             }
 
-            // ── Step 7: Check shouldCollectConsent ──
-            const shouldCollect = results.initialLayerB !== undefined && results.initialLayerB !== 2; // 2 = NONE
-            results.shouldCollectB = shouldCollect;
+            // If different Settings IDs, services might not overlap
+            if (matched === 0 && pair.a !== pair.b) {
+                addStep(idx, 'warn', 'No overlapping services between A and B',
+                    `A has ${res.consentsA.length} services, B has ${res.consentsB.length} services. Different Settings IDs may have different DPS configurations.`);
+                // In this case, check if B consents are all true (restored from A's accept all)
+                const allBTrue = res.consentsB.every(s => s.consent === true);
+                if (allBTrue && res.consentsB.length > 0) {
+                    addStep(idx, 'ok', 'All Device B services show consent=true', 'Consent appears to have been restored');
+                } else {
+                    const falseOnes = res.consentsB.filter(s => !s.consent).map(s => s.name);
+                    addStep(idx, 'fail', 'Some Device B services show consent=false',
+                        `Services with false: ${falseOnes.join(', ')}`, true);
+                    res.errors.push(`Device B services not restored: ${falseOnes.join(', ')}`);
+                }
+            } else if (mismatches.length === 0) {
+                addStep(idx, 'ok', `Consents match across ${matched} shared services`);
+                res.consentMatch = true;
+            } else {
+                addStep(idx, 'fail', `Consent mismatch in ${mismatches.length} services`,
+                    mismatches.join('\n'), true);
+                res.consentMatch = false;
+                res.errors.push(`Consent mismatch: ${mismatches.join('; ')}`);
+            }
+
+            // ── 9. Critical check: shouldCollectConsent ──
+            const shouldCollect = res.initialLayerB !== 2; // 2 = NONE means no banner needed
+            res.shouldCollectB = shouldCollect;
 
             if (!shouldCollect) {
-                setStep(index, 7, 'ok', 'shouldCollectConsent == false',
-                    `initialLayer: ${results.initialLayerB} (NONE) — banner will NOT show. CDCS working correctly.`);
+                addStep(idx, 'ok', '✓ shouldCollectConsent = false',
+                    'Banner will NOT show on Device B. CDCS is working correctly for this pair.');
             } else {
                 const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
-                const layerName = layerNames[results.initialLayerB] || results.initialLayerB;
-                setStep(index, 7, 'fail', 'shouldCollectConsent should be false but is TRUE',
-                    `initialLayer: ${results.initialLayerB} (${layerName}) — banner WILL show again. CDCS NOT restoring consent properly.`, 'error');
-                results.errors.push(`shouldCollectConsent=true after restore (initialLayer=${results.initialLayerB}/${layerName})`);
+                const ln = layerNames[res.initialLayerB] ?? res.initialLayerB;
+                addStep(idx, 'fail', '✗ shouldCollectConsent = true (CDCS NOT WORKING)',
+                    `initialLayer=${res.initialLayerB} (${ln}). Banner WILL show again on Device B despite consent existing on Device A.`, true);
+                res.errors.push(`shouldCollectConsent=true on restore (initialLayer=${res.initialLayerB}/${ln})`);
             }
 
-            // ── Cleanup SDK ──
+            // ── 10. ControllerID check ──
+            if (res.controllerIdA && res.controllerIdB) {
+                if (res.controllerIdA === res.controllerIdB) {
+                    addStep(idx, 'ok', 'ControllerID preserved across devices',
+                        `${res.controllerIdA}`);
+                } else {
+                    addStep(idx, 'fail', 'ControllerID changed on Device B',
+                        `A: ${res.controllerIdA}\nB: ${res.controllerIdB}\nDevice B generated a new ID instead of using A's. This confirms CDCS is not restoring.`, true);
+                    res.errors.push('ControllerID mismatch: Device B got a new ID');
+                }
+            }
+
             ucB = null;
 
         } catch (err) {
-            // Already logged per step
+            // Logged per step
         }
 
+        // ── Network analysis ──
         net.restore();
-        renderNetLog(index, net.getLog());
+        const netLog = net.getLog();
+        renderNetLog(idx, netLog);
 
-        // Check for 404s on consentState
-        const failed404 = net.getLog().filter(e => e.status === 404 && e.url.includes('consentState'));
-        if (failed404.length > 0) {
-            results.errors.push(`consentState returned 404 — CDCS endpoint not available for this settingsId`);
+        const failed = netLog.filter(e => e.ok === false || e.error);
+        if (failed.length > 0) {
+            for (const f of failed) {
+                const shortUrl = f.url.split('?')[0];
+                const msg = `[${f.status || 'ERR'}] ${shortUrl}`;
+                res.networkIssues.push(msg);
+            }
+            addStep(idx, 'warn', `${failed.length} failed network request(s)`,
+                res.networkIssues.join('\n'));
         }
 
-        // Final verdict
-        if (results.errors.length === 0) {
-            results.verdict = 'pass';
-        } else if (results.errors.some(e => e.includes('404') || e.includes('shouldCollectConsent') || e.includes('mismatch'))) {
-            results.verdict = 'fail';
+        // ── Final verdict ──
+        if (res.errors.length === 0) {
+            res.verdict = 'pass';
         } else {
-            results.verdict = 'warn';
+            res.verdict = 'fail';
         }
 
-        setVerdict(index, results.verdict);
-        return results;
+        setVerdict(idx, res.verdict);
+        return res;
     }
 
-    // ─── Run all tests sequentially ───
+    // ══════════════════════════════════════════════════
+    // Run all
+    // ══════════════════════════════════════════════════
     async function runAllTests() {
         const btn = document.getElementById('btnRun');
         const statusEl = document.getElementById('globalStatus');
         btn.disabled = true;
 
-        const lines = document.getElementById('settingsInput').value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length === 0) {
-            statusEl.textContent = 'No Settings IDs entered.';
+        // Gather pairs
+        const pairs = [];
+        document.querySelectorAll('[id^="pair-"]').forEach(row => {
+            const id = row.id.replace('pair-', '');
+            const a = document.getElementById(`pairA-${id}`)?.value.trim();
+            const b = document.getElementById(`pairB-${id}`)?.value.trim();
+            if (a && b) pairs.push({ a, b });
+        });
+
+        if (pairs.length === 0) {
+            statusEl.textContent = 'Add at least one test pair.';
             btn.disabled = false;
             return;
         }
 
-        // Load SDK first
+        // Load SDK
         statusEl.textContent = 'Loading Browser SDK...';
         try {
             await loadSDK();
         } catch (err) {
-            statusEl.textContent = 'FATAL: Could not load SDK. Open this file in Chrome/Firefox directly (not in an embedded preview). Disable adblockers for app.usercentrics.eu.';
+            statusEl.textContent = 'FATAL: SDK failed to load. Open in Chrome/Firefox, disable adblockers.';
             btn.disabled = false;
             return;
         }
 
-        // Create cards
-        const resultsArea = document.getElementById('resultsArea');
-        resultsArea.innerHTML = '';
-        for (let i = 0; i < lines.length; i++) {
-            resultsArea.appendChild(createTestCard(lines[i], i));
-        }
+        // Build cards
+        const area = document.getElementById('resultsArea');
+        area.innerHTML = '';
+        pairs.forEach((p, i) => area.appendChild(createTestCard(p, i)));
 
         // Run sequentially
         const allResults = [];
-        for (let i = 0; i < lines.length; i++) {
-            statusEl.textContent = `Testing ${i + 1}/${lines.length}: ${lines[i]}`;
-            const r = await runSingleTest(lines[i], i);
+        for (let i = 0; i < pairs.length; i++) {
+            statusEl.textContent = `Testing pair ${i + 1}/${pairs.length}: ${pairs[i].a} → ${pairs[i].b}`;
+            const r = await runPairTest(pairs[i], i);
             allResults.push(r);
-            // Pause between tests
-            if (i < lines.length - 1) await sleep(1000);
+            if (i < pairs.length - 1) await sleep(1500);
         }
 
-        // Summary
         const passed = allResults.filter(r => r.verdict === 'pass').length;
         const failed = allResults.filter(r => r.verdict === 'fail').length;
-        const warns = allResults.filter(r => r.verdict === 'warn').length;
-        statusEl.textContent = `Done: ${passed} passed, ${failed} failed, ${warns} warnings`;
+        statusEl.textContent = `Done: ${passed} pass / ${failed} fail`;
 
         renderSummary(allResults);
         btn.disabled = false;
@@ -694,60 +790,60 @@ fzqn_OViVHqQHO</textarea>
 
     function renderSummary(results) {
         const area = document.getElementById('summaryArea');
+        let r = `CDCS CROSS-DEVICE TEST REPORT\n`;
+        r += `Generated: ${new Date().toISOString()}\n`;
+        r += `Browser SDK: 2.12.1\n`;
+        r += `${'═'.repeat(65)}\n\n`;
 
-        let report = `CDCS TEST REPORT — ${new Date().toISOString()}\n`;
-        report += `${'═'.repeat(60)}\n\n`;
+        for (const t of results) {
+            const icon = t.verdict === 'pass' ? '✓ PASS' : '✗ FAIL';
+            r += `${icon}: ${t.settingsA} → ${t.settingsB}\n`;
+            r += `  controllerID (A):           ${t.controllerIdA || '—'}\n`;
+            r += `  controllerID (B):           ${t.controllerIdB || '—'}\n`;
+            r += `  controllerID preserved:     ${t.controllerIdA && t.controllerIdB ? (t.controllerIdA === t.controllerIdB ? 'YES' : 'NO') : '—'}\n`;
+            r += `  initialLayer on restore:    ${t.initialLayerB} (${({0:'FIRST_LAYER',1:'SECOND_LAYER',2:'NONE'})[t.initialLayerB] ?? '?'})\n`;
+            r += `  shouldCollectConsent:       ${t.shouldCollectB}\n`;
 
-        for (const r of results) {
-            const icon = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' : '⚠';
-            report += `${icon} ${r.settingsId}  →  ${r.verdict.toUpperCase()}\n`;
-            if (r.controllerIdA) report += `  controllerID (A): ${r.controllerIdA}\n`;
-            if (r.controllerIdB) report += `  controllerID (B): ${r.controllerIdB}\n`;
-            if (r.controllerIdA && r.controllerIdB) {
-                report += `  controllerID match: ${r.controllerIdA === r.controllerIdB ? 'YES' : 'NO ← PROBLEM'}\n`;
+            if (t.consentsA.length) {
+                r += `  Device A consents:\n`;
+                t.consentsA.forEach(s => { r += `    ${s.name} (${s.id}): ${s.consent}\n`; });
             }
-            report += `  initialLayer on restore: ${r.initialLayerB}\n`;
-            report += `  shouldCollectConsent on restore: ${r.shouldCollectB}\n`;
-            if (r.consentsA) {
-                report += `  Device A consents: ${r.consentsA.map(s => `${s.name}=${s.consent}`).join(', ')}\n`;
+            if (t.consentsB.length) {
+                r += `  Device B consents:\n`;
+                t.consentsB.forEach(s => { r += `    ${s.name} (${s.id}): ${s.consent}\n`; });
             }
-            if (r.consentsB) {
-                report += `  Device B consents: ${r.consentsB.map(s => `${s.name}=${s.consent}`).join(', ')}\n`;
+            if (t.networkIssues.length) {
+                r += `  Network issues:\n`;
+                t.networkIssues.forEach(n => { r += `    ${n}\n`; });
             }
-            if (r.errors.length > 0) {
-                report += `  ERRORS:\n`;
-                r.errors.forEach(e => { report += `    → ${e}\n`; });
+            if (t.errors.length) {
+                r += `  ERRORS:\n`;
+                t.errors.forEach(e => { r += `    → ${e}\n`; });
             }
-            report += '\n';
+            r += '\n';
         }
 
-        report += `${'═'.repeat(60)}\n`;
-        report += `SUMMARY: ${results.filter(r => r.verdict === 'pass').length} PASS / ${results.filter(r => r.verdict === 'fail').length} FAIL / ${results.filter(r => r.verdict === 'warn').length} WARN\n`;
+        r += `${'═'.repeat(65)}\n`;
+        const p = results.filter(x => x.verdict === 'pass').length;
+        const f = results.filter(x => x.verdict === 'fail').length;
+        r += `TOTAL: ${p} PASS / ${f} FAIL out of ${results.length} pairs\n\n`;
 
-        const failedIds = results.filter(r => r.verdict === 'fail').map(r => r.settingsId);
-        if (failedIds.length > 0) {
-            report += `\nFAILED IDs: ${failedIds.join(', ')}\n`;
-            report += `\nLikely cause: consentState endpoint returns 404 for these settingsIds.\n`;
-            report += `CDCS may not be fully activated at the backend/API level,\n`;
-            report += `even if the toggle shows enabled in the Admin Interface / GraphQL.\n`;
+        if (f > 0) {
+            r += `DIAGNOSIS:\n`;
+            r += `The CDCS restore was tested by creating consent on Device A\n`;
+            r += `(Settings ID A), then initializing Device B (Settings ID B)\n`;
+            r += `with the controllerID from A — after clearing all local storage.\n`;
+            r += `Failed pairs show shouldCollectConsent=true on Device B,\n`;
+            r += `meaning the banner would appear again despite consent existing.\n`;
         }
 
-        area.innerHTML = `
-            <div class="summary-card">
-                <h2>Test Report (copy-pasteable)</h2>
-                <pre>${esc(report)}</pre>
-            </div>
-        `;
+        area.innerHTML = `<div class="summary-card"><h2>Test Report (copy-pasteable)</h2><pre>${esc(r)}</pre></div>`;
     }
 
-    // ─── Helpers ───
+    // ── Helpers ──
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-    function withTimeout(promise, ms, msg) {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms))
-        ]);
+    function withTimeout(p, ms, msg) {
+        return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
     }
 </script>
 
