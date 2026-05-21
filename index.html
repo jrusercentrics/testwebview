@@ -3,29 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CDCS Test — Cross-Device Consent Sharing</title>
-    <script>window.__UC_SDK_LOADED = false;</script>
-    <script src="https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js" onload="window.__UC_SDK_LOADED=true;" onerror="document.addEventListener('DOMContentLoaded',function(){document.getElementById('logEntries').innerHTML='<div class=\'log-entry error\'>FATAL: Could not load Browser SDK from app.usercentrics.eu. Make sure you open this file in a regular browser (not an embedded preview) and that the domain is not blocked by an adblocker or firewall.</div>';document.getElementById('statusText').textContent='SDK failed to load';document.getElementById('statusDot').className='status-dot error';})"></script>
+    <title>CDCS Automated Test Runner</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg: #0e1117;
-            --surface: #161b22;
-            --surface-2: #1c2129;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --accent: #58a6ff;
-            --accent-dim: rgba(88, 166, 255, 0.15);
-            --green: #3fb950;
-            --green-dim: rgba(63, 185, 80, 0.15);
-            --red: #f85149;
-            --red-dim: rgba(248, 81, 73, 0.15);
-            --yellow: #d29922;
-            --yellow-dim: rgba(210, 153, 34, 0.15);
-            --mono: 'JetBrains Mono', monospace;
-            --sans: 'DM Sans', sans-serif;
+            --bg: #0a0c10;
+            --surface: #13161c;
+            --surface-2: #1a1e26;
+            --border: #262c36;
+            --text: #d4dae4;
+            --text-dim: #6b7588;
+            --blue: #4da0ff;
+            --blue-bg: rgba(77,160,255,0.08);
+            --green: #34d399;
+            --green-bg: rgba(52,211,153,0.08);
+            --red: #f87171;
+            --red-bg: rgba(248,113,113,0.08);
+            --amber: #fbbf24;
+            --amber-bg: rgba(251,191,36,0.08);
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'Outfit', sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,659 +33,721 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding: 24px;
+            padding: 32px 24px;
+            max-width: 960px;
+            margin: 0 auto;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
+        .title-bar {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 8px;
         }
 
-        .header h1 {
-            font-size: 22px;
+        .title-bar h1 {
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
+            letter-spacing: -0.3px;
         }
 
-        .header p {
-            color: var(--text-muted);
-            font-size: 14px;
+        .title-bar .version {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            background: var(--surface-2);
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
-        .config-section {
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        /* ── Input area ── */
+        .input-area {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
-        .config-section h2 {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 12px;
-        }
-
-        .input-group label {
+        .input-area label {
             display: block;
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
         }
 
-        .input-group input, .input-group select {
+        .input-area textarea {
             width: 100%;
-            padding: 10px 14px;
+            min-height: 80px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 6px;
             color: var(--text);
             font-family: var(--mono);
             font-size: 13px;
+            padding: 12px;
+            resize: vertical;
             outline: none;
-            transition: border-color 0.2s;
+            line-height: 1.6;
         }
 
-        .input-group input:focus, .input-group select:focus {
-            border-color: var(--accent);
+        .input-area textarea:focus {
+            border-color: var(--blue);
         }
 
-        .input-group input::placeholder {
-            color: #484f58;
+        .input-area textarea::placeholder {
+            color: #3a4050;
         }
 
-        .btn-row {
+        .input-area .hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
+
+        .run-row {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 16px;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
         }
 
-        button {
-            padding: 10px 18px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .btn-run {
+            padding: 10px 24px;
+            background: var(--blue);
+            color: var(--bg);
+            border: none;
+            border-radius: 6px;
             font-family: var(--sans);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s;
-            background: var(--surface-2);
-            color: var(--text);
+            transition: opacity 0.15s;
         }
 
-        button:hover {
-            border-color: var(--accent);
-            background: var(--accent-dim);
-            color: var(--accent);
+        .btn-run:hover { opacity: 0.85; }
+        .btn-run:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .global-status {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-dim);
         }
 
-        button.primary {
-            background: var(--accent);
-            color: var(--bg);
-            border-color: var(--accent);
+        /* ── Test results ── */
+        .results-area {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        button.primary:hover {
-            opacity: 0.85;
-        }
-
-        button.danger {
-            border-color: var(--red);
-            color: var(--red);
-            background: var(--red-dim);
-        }
-
-        button.danger:hover {
-            background: var(--red);
-            color: #fff;
-        }
-
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .log-panel {
+        .test-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 20px;
+            border-radius: 10px;
             overflow: hidden;
+            transition: border-color 0.3s;
         }
 
-        .log-panel-header {
+        .test-card.running { border-color: var(--blue); }
+        .test-card.pass { border-color: var(--green); }
+        .test-card.fail { border-color: var(--red); }
+        .test-card.warn { border-color: var(--amber); }
+
+        .test-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 20px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--border);
         }
 
-        .log-panel-header h2 {
-            font-size: 14px;
+        .test-card-header .sid {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .test-card-header .verdict {
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
+            letter-spacing: 0.8px;
+            padding: 3px 10px;
+            border-radius: 4px;
         }
 
-        .log-entries {
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 4px 0;
+        .verdict.running { color: var(--blue); background: var(--blue-bg); }
+        .verdict.pass { color: var(--green); background: var(--green-bg); }
+        .verdict.fail { color: var(--red); background: var(--red-bg); }
+        .verdict.warn { color: var(--amber); background: var(--amber-bg); }
+        .verdict.queued { color: var(--text-dim); background: var(--surface-2); }
+
+        .test-steps {
+            padding: 0;
+            list-style: none;
         }
 
-        .log-entry {
-            padding: 8px 20px;
-            font-family: var(--mono);
-            font-size: 12px;
-            line-height: 1.6;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.4);
-        }
-
-        .log-entry:last-child { border-bottom: none; }
-
-        .log-entry .timestamp {
-            color: #484f58;
-            margin-right: 8px;
-        }
-
-        .log-entry.info { color: var(--text); }
-        .log-entry.success { color: var(--green); background: var(--green-dim); }
-        .log-entry.error { color: var(--red); background: var(--red-dim); }
-        .log-entry.warn { color: var(--yellow); background: var(--yellow-dim); }
-        .log-entry.data { color: var(--accent); }
-
-        .status-bar {
+        .test-step {
             display: flex;
-            gap: 20px;
-            padding: 14px 20px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #484f58;
-        }
-
-        .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
-        .status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
-
-        .status-value {
-            font-family: var(--mono);
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 18px;
             font-size: 12px;
-            color: var(--accent);
+            font-family: var(--mono);
+            line-height: 1.5;
+            border-bottom: 1px solid rgba(38,44,54,0.5);
+            min-height: 32px;
+        }
+
+        .test-step:last-child { border-bottom: none; }
+
+        .step-icon {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+            margin-top: 1px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 16px;
+        }
+
+        .step-icon.pending { color: var(--text-dim); }
+        .step-icon.running { color: var(--blue); }
+        .step-icon.ok { color: var(--green); }
+        .step-icon.fail { color: var(--red); }
+        .step-icon.warn { color: var(--amber); }
+
+        .step-text { flex: 1; }
+        .step-text .detail {
+            color: var(--text-dim);
+            font-size: 11px;
+            display: block;
+            margin-top: 2px;
             word-break: break-all;
         }
 
-        .consent-display {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+        .step-text .error-detail {
+            color: var(--red);
+            font-size: 11px;
+            display: block;
+            margin-top: 2px;
+            word-break: break-all;
         }
 
-        .consent-display h2 {
+        /* Network log */
+        .network-section {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .network-section summary {
+            font-size: 11px;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: var(--mono);
+        }
+
+        .network-log {
+            margin-top: 8px;
+            font-family: var(--mono);
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-dim);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .network-log .req {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(38,44,54,0.3);
+        }
+
+        .network-log .req.error { color: var(--red); }
+        .network-log .req.ok { color: var(--text-dim); }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--blue);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        /* Summary */
+        .summary-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 8px;
+        }
+
+        .summary-card h2 {
             font-size: 14px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
-
-        .consent-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .consent-table th {
-            text-align: left;
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 11px;
+            margin-bottom: 12px;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .consent-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.4);
+        .summary-card pre {
             font-family: var(--mono);
             font-size: 12px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .badge.true { background: var(--green-dim); color: var(--green); }
-        .badge.false { background: var(--red-dim); color: var(--red); }
-
-        .help-text {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--accent);
-            border-radius: 0 12px 12px 0;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            font-size: 13px;
             line-height: 1.7;
-            color: var(--text-muted);
-        }
-
-        .help-text strong { color: var(--text); }
-        .help-text code {
-            background: var(--bg);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: var(--mono);
-            font-size: 12px;
-            color: var(--accent);
-        }
-
-        .columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .columns { grid-template-columns: 1fr; }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>CDCS Test Tool</h1>
-    <p>Cross-Device Consent Sharing — Browser SDK v2.12.1</p>
+<div class="title-bar">
+    <h1>CDCS Automated Test</h1>
+    <span class="version">Browser SDK v2.12.1</span>
 </div>
+<p class="subtitle">Enter Settings IDs below and click Run. Each ID gets a fully automated test: init → accept all → clear storage → restore with controllerID → verify consents.</p>
 
-<div class="help-text">
-    <strong>Test flow:</strong><br>
-    1. Enter the <code>settingsId</code> and click <strong>Init SDK</strong> — this simulates Device A (first visit, no controllerID).<br>
-    2. Give consent via <strong>Accept All</strong> or <strong>Deny All</strong>. Copy the generated <code>controllerID</code>.<br>
-    3. Click <strong>Reset SDK</strong>, paste the controllerID in the field, and click <strong>Init with ControllerID</strong> — this simulates Device B restoring a session.<br>
-    4. Check if consent was restored correctly. If not, the CDCS feature may not be working for this settingsId.
-</div>
-
-<!-- Config -->
-<div class="config-section">
-    <h2>Configuration</h2>
-    <div class="columns">
-        <div class="input-group">
-            <label>settingsId</label>
-            <input type="text" id="settingsId" placeholder="e.g. tIkRJxexTam6P8" />
-        </div>
-        <div class="input-group">
-            <label>controllerID (for restore)</label>
-            <input type="text" id="controllerId" placeholder="Leave empty for new session" />
-        </div>
-    </div>
-    <div class="btn-row">
-        <button class="primary" id="btnInit" onclick="initSDK()">Init SDK (new session)</button>
-        <button id="btnInitRestore" onclick="initWithController()">Init with ControllerID (restore)</button>
-        <button id="btnRestoreSession" onclick="restoreSession()" disabled>restoreUserSession()</button>
-        <button class="danger" id="btnReset" onclick="resetSDK()">Reset SDK</button>
+<div class="input-area">
+    <label>Settings IDs (one per line)</label>
+    <textarea id="settingsInput" placeholder="tIkRJxexTam6P8
+PIsxCtDSMLX4O1
+m6JGswqWVee2Ho">tIkRJxexTam6P8
+PIsxCtDSMLX4O1
+m6JGswqWVee2Ho
+noA23m0yw3N9mk
+fzqn_OViVHqQHO</textarea>
+    <div class="hint">One Settings ID per line. CCPA configs excluded. Empty lines are ignored.</div>
+    <div class="run-row">
+        <button class="btn-run" id="btnRun" onclick="runAllTests()">Run All Tests</button>
+        <span class="global-status" id="globalStatus"></span>
     </div>
 </div>
 
-<!-- Status -->
-<div class="status-bar">
-    <div class="status-item">
-        <div class="status-dot" id="statusDot"></div>
-        <span>SDK Status:</span>
-        <span class="status-value" id="statusText">Not initialized</span>
-    </div>
-    <div class="status-item">
-        <span>ControllerID:</span>
-        <span class="status-value" id="currentControllerId">—</span>
-    </div>
-    <div class="status-item">
-        <span>shouldCollectConsent:</span>
-        <span class="status-value" id="shouldCollect">—</span>
-    </div>
-</div>
-
-<!-- Actions -->
-<div class="config-section">
-    <h2>Consent Actions</h2>
-    <div class="btn-row">
-        <button id="btnAcceptAll" onclick="acceptAll()" disabled>Accept All</button>
-        <button id="btnDenyAll" onclick="denyAll()" disabled>Deny All</button>
-        <button id="btnGetConsents" onclick="getConsents()" disabled>Get Current Consents</button>
-        <button id="btnGetController" onclick="getControllerIdFromSDK()" disabled>Get ControllerID</button>
-    </div>
-</div>
-
-<!-- Consent Table -->
-<div class="consent-display" id="consentDisplay" style="display:none;">
-    <h2>Consent Status per Service</h2>
-    <table class="consent-table">
-        <thead>
-            <tr>
-                <th>Service</th>
-                <th>Template ID</th>
-                <th>Consent</th>
-                <th>Is Essential</th>
-            </tr>
-        </thead>
-        <tbody id="consentBody"></tbody>
-    </table>
-</div>
-
-<!-- Log -->
-<div class="log-panel">
-    <div class="log-panel-header">
-        <h2>Event Log</h2>
-        <button onclick="clearLog()" style="padding:5px 12px;font-size:11px;">Clear</button>
-    </div>
-    <div class="log-entries" id="logEntries">
-        <div class="empty-state">Waiting for SDK initialization...</div>
-    </div>
-</div>
+<div class="results-area" id="resultsArea"></div>
+<div id="summaryArea"></div>
 
 <script>
-    let UC_instance = null;
-    let isInitialized = false;
+    // ─── We load the SDK dynamically so we can detect load failures ───
+    let sdkLoaded = false;
+    let sdkLoadPromise = null;
 
-    function log(msg, type = 'info') {
-        const container = document.getElementById('logEntries');
-        const empty = container.querySelector('.empty-state');
-        if (empty) empty.remove();
-
-        const entry = document.createElement('div');
-        entry.className = `log-entry ${type}`;
-        const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
-        entry.innerHTML = `<span class="timestamp">${now}</span>${escapeHtml(msg)}`;
-        container.appendChild(entry);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    function clearLog() {
-        document.getElementById('logEntries').innerHTML = '<div class="empty-state">Log cleared.</div>';
-    }
-
-    function setStatus(text, active = false, error = false) {
-        document.getElementById('statusText').textContent = text;
-        const dot = document.getElementById('statusDot');
-        dot.className = 'status-dot';
-        if (active) dot.classList.add('active');
-        if (error) dot.classList.add('error');
-    }
-
-    function setButtons(enabled) {
-        document.getElementById('btnAcceptAll').disabled = !enabled;
-        document.getElementById('btnDenyAll').disabled = !enabled;
-        document.getElementById('btnGetConsents').disabled = !enabled;
-        document.getElementById('btnGetController').disabled = !enabled;
-        document.getElementById('btnRestoreSession').disabled = !enabled;
-    }
-
-    // ─── Init SDK (new session, no controllerID) ───
-    function initSDK() {
-        if (typeof UC_SDK === 'undefined') {
-            log('ERROR: UC_SDK is not loaded. Open this HTML file directly in Chrome/Firefox (File > Open). It will NOT work in embedded previews (e.g. Claude UI, CodePen iframes) because the SDK domain may be blocked.', 'error');
-            setStatus('SDK not loaded', false, true);
-            return;
-        }
-
-        const settingsId = document.getElementById('settingsId').value.trim();
-        if (!settingsId) {
-            log('ERROR: settingsId is required', 'error');
-            return;
-        }
-
-        log(`Initializing SDK with settingsId: ${settingsId} (NO controllerID — new session)`);
-        setStatus('Initializing...');
-
-        try {
-            UC_instance = new UC_SDK.default(settingsId);
-            log('UC_SDK instance created');
-
-            UC_instance.init().then((initialUIValues) => {
-                isInitialized = true;
-                log('SDK initialized successfully!', 'success');
-                log(`initialUIValues: ${JSON.stringify(initialUIValues, null, 2)}`, 'data');
-
-                setStatus('Ready (new session)', true);
-                setButtons(true);
-
-                // Auto-get controllerID
-                getControllerIdFromSDK();
-                checkShouldCollect(initialUIValues);
-
-            }).catch((err) => {
-                log(`Init error: ${err.message || err}`, 'error');
-                setStatus('Init failed', false, true);
-            });
-        } catch (err) {
-            log(`SDK creation error: ${err.message || err}`, 'error');
-            setStatus('Error', false, true);
-        }
-    }
-
-    // ─── Init SDK with ControllerID (simulates Device B) ───
-    function initWithController() {
-        if (typeof UC_SDK === 'undefined') {
-            log('ERROR: UC_SDK is not loaded. Open this HTML file directly in Chrome/Firefox.', 'error');
-            setStatus('SDK not loaded', false, true);
-            return;
-        }
-
-        const settingsId = document.getElementById('settingsId').value.trim();
-        const controllerId = document.getElementById('controllerId').value.trim();
-
-        if (!settingsId) {
-            log('ERROR: settingsId is required', 'error');
-            return;
-        }
-        if (!controllerId) {
-            log('ERROR: controllerID is required for restore init', 'error');
-            return;
-        }
-
-        log(`Initializing SDK with settingsId: ${settingsId} + controllerID: ${controllerId}`);
-        log('This simulates Device B — restoring consent from another device', 'warn');
-        setStatus('Initializing with controllerID...');
-
-        try {
-            UC_instance = new UC_SDK.default(settingsId, { controllerId: controllerId });
-            log('UC_SDK instance created with controllerID option');
-
-            UC_instance.init().then((initialUIValues) => {
-                isInitialized = true;
-                log('SDK initialized with controllerID!', 'success');
-                log(`initialUIValues: ${JSON.stringify(initialUIValues, null, 2)}`, 'data');
-
-                setStatus('Ready (restored session)', true);
-                setButtons(true);
-
-                getControllerIdFromSDK();
-                checkShouldCollect(initialUIValues);
-
-                // Auto-fetch consents to see if they were restored
-                setTimeout(() => getConsents(), 500);
-
-            }).catch((err) => {
-                log(`Init with controllerID error: ${err.message || err}`, 'error');
-                log('>>> This is likely the error the customer is seeing <<<', 'error');
-                setStatus('Restore failed', false, true);
-            });
-        } catch (err) {
-            log(`SDK creation error: ${err.message || err}`, 'error');
-            setStatus('Error', false, true);
-        }
-    }
-
-    // ─── restoreUserSession (alternative to init with controllerID) ───
-    function restoreSession() {
-        const controllerId = document.getElementById('controllerId').value.trim();
-        if (!controllerId) {
-            log('ERROR: controllerID is required for restoreUserSession', 'error');
-            return;
-        }
-        if (!UC_instance || !isInitialized) {
-            log('ERROR: SDK must be initialized first', 'error');
-            return;
-        }
-
-        log(`Calling restoreUserSession("${controllerId}")...`);
-
-        UC_instance.restoreUserSession(controllerId).then(() => {
-            log('restoreUserSession succeeded!', 'success');
-            getControllerIdFromSDK();
-            getConsents();
-        }).catch((err) => {
-            log(`restoreUserSession error: ${err.message || err}`, 'error');
+    function loadSDK() {
+        if (sdkLoadPromise) return sdkLoadPromise;
+        sdkLoadPromise = new Promise((resolve, reject) => {
+            if (typeof UC_SDK !== 'undefined') { sdkLoaded = true; resolve(); return; }
+            const s = document.createElement('script');
+            s.src = 'https://app.usercentrics.eu/browser-sdk/2.12.1/bundle.js';
+            s.onload = () => { sdkLoaded = true; resolve(); };
+            s.onerror = () => reject(new Error('Failed to load Browser SDK from app.usercentrics.eu'));
+            document.head.appendChild(s);
         });
+        return sdkLoadPromise;
     }
 
-    // ─── Accept All ───
-    function acceptAll() {
-        if (!UC_instance || !isInitialized) return;
-        log('Calling acceptAllServices()...');
-
-        try {
-            const result = UC_instance.acceptAllServices();
-            log('acceptAllServices result: ' + JSON.stringify(result), 'success');
-            getControllerIdFromSDK();
-            getConsents();
-        } catch (err) {
-            log(`acceptAllServices error: ${err.message || err}`, 'error');
-        }
-    }
-
-    // ─── Deny All ───
-    function denyAll() {
-        if (!UC_instance || !isInitialized) return;
-        log('Calling denyAllServices()...');
-
-        try {
-            const result = UC_instance.denyAllServices();
-            log('denyAllServices result: ' + JSON.stringify(result), 'success');
-            getControllerIdFromSDK();
-            getConsents();
-        } catch (err) {
-            log(`denyAllServices error: ${err.message || err}`, 'error');
-        }
-    }
-
-    // ─── Get Consents ───
-    function getConsents() {
-        if (!UC_instance || !isInitialized) return;
-        log('Fetching current consents...');
-
-        try {
-            const services = UC_instance.getServicesBaseInfo();
-            log(`Found ${services.length} services`, 'data');
-
-            const tbody = document.getElementById('consentBody');
-            tbody.innerHTML = '';
-
-            services.forEach(s => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="color:var(--text)">${escapeHtml(s.name || '—')}</td>
-                    <td>${escapeHtml(s.id || '—')}</td>
-                    <td><span class="badge ${s.consent ? 'true' : 'false'}">${s.consent ? 'TRUE' : 'FALSE'}</span></td>
-                    <td>${s.isEssential ? 'Yes' : 'No'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('consentDisplay').style.display = 'block';
-            log('Consent table updated', 'success');
-        } catch (err) {
-            log(`getServicesBaseInfo error: ${err.message || err}`, 'error');
-        }
-    }
-
-    // ─── Get ControllerID ───
-    function getControllerIdFromSDK() {
-        if (!UC_instance || !isInitialized) return;
-
-        try {
-            const settings = UC_instance.getSettings();
-            const cid = settings?.controllerId || '(not available)';
-            document.getElementById('currentControllerId').textContent = cid;
-            log(`ControllerID: ${cid}`, 'data');
-
-            // Also update the input field for easy copy-paste
-            if (cid && cid !== '(not available)') {
-                document.getElementById('controllerId').value = cid;
+    // ─── Utility: clear ALL UC-related localStorage ───
+    function clearUCStorage() {
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('uc_') || key.startsWith('UC_') || key.includes('usercentrics') || key.includes('Usercentrics'))) {
+                toRemove.push(key);
             }
-        } catch (err) {
-            log(`getSettings error: ${err.message || err}`, 'error');
+        }
+        toRemove.forEach(k => localStorage.removeItem(k));
+        return toRemove.length;
+    }
+
+    // ─── Intercept network requests for consentState ───
+    function createNetworkInterceptor() {
+        const log = [];
+        const origFetch = window.fetch;
+
+        const interceptedFetch = function(...args) {
+            const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+            const isRelevant = url.includes('consentState') || url.includes('consentsHistory') || url.includes('consentStatus');
+
+            if (isRelevant) {
+                const entry = { url: url.split('?')[0], params: url.split('?')[1] || '', status: null, ok: null, error: null, timestamp: new Date().toLocaleTimeString('en-GB', { hour12: false }) };
+                log.push(entry);
+                return origFetch.apply(this, args).then(resp => {
+                    entry.status = resp.status;
+                    entry.ok = resp.ok;
+                    return resp;
+                }).catch(err => {
+                    entry.error = err.message;
+                    throw err;
+                });
+            }
+            return origFetch.apply(this, args);
+        };
+
+        return {
+            install() { window.fetch = interceptedFetch; },
+            restore() { window.fetch = origFetch; },
+            getLog() { return log; }
+        };
+    }
+
+    // ─── DOM helpers ───
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function createTestCard(settingsId, index) {
+        const card = document.createElement('div');
+        card.className = 'test-card';
+        card.id = `card-${index}`;
+        card.innerHTML = `
+            <div class="test-card-header">
+                <span class="sid">${esc(settingsId)}</span>
+                <span class="verdict queued" id="verdict-${index}">QUEUED</span>
+            </div>
+            <ul class="test-steps" id="steps-${index}">
+                <li class="test-step" id="step-${index}-0"><span class="step-icon pending">○</span><span class="step-text">Clear localStorage</span></li>
+                <li class="test-step" id="step-${index}-1"><span class="step-icon pending">○</span><span class="step-text">Init SDK (new session)</span></li>
+                <li class="test-step" id="step-${index}-2"><span class="step-icon pending">○</span><span class="step-text">Accept All services</span></li>
+                <li class="test-step" id="step-${index}-3"><span class="step-icon pending">○</span><span class="step-text">Read controllerID + consents (Device A)</span></li>
+                <li class="test-step" id="step-${index}-4"><span class="step-icon pending">○</span><span class="step-text">Clear localStorage + reset SDK</span></li>
+                <li class="test-step" id="step-${index}-5"><span class="step-icon pending">○</span><span class="step-text">Init SDK with controllerID (Device B restore)</span></li>
+                <li class="test-step" id="step-${index}-6"><span class="step-icon pending">○</span><span class="step-text">Verify restored consents match Device A</span></li>
+                <li class="test-step" id="step-${index}-7"><span class="step-icon pending">○</span><span class="step-text">Check shouldCollectConsent == false</span></li>
+            </ul>
+            <div class="network-section">
+                <details>
+                    <summary>Network log (consentState requests)</summary>
+                    <div class="network-log" id="netlog-${index}">—</div>
+                </details>
+            </div>
+        `;
+        return card;
+    }
+
+    function setStep(index, step, icon, text, detail, detailClass) {
+        const el = document.getElementById(`step-${index}-${step}`);
+        if (!el) return;
+        const iconMap = { pending: '○', running: '◉', ok: '✓', fail: '✗', warn: '⚠' };
+        el.querySelector('.step-icon').className = `step-icon ${icon}`;
+        el.querySelector('.step-icon').textContent = iconMap[icon] || '○';
+        if (text) {
+            let html = esc(text);
+            if (detail) {
+                html += `<span class="${detailClass === 'error' ? 'error-detail' : 'detail'}">${esc(detail)}</span>`;
+            }
+            el.querySelector('.step-text').innerHTML = html;
         }
     }
 
-    function checkShouldCollect(initialUIValues) {
-        const shouldCollect = initialUIValues?.initialLayer !== undefined
-            ? initialUIValues.initialLayer !== 'NONE'
-            : 'unknown';
-        document.getElementById('shouldCollect').textContent = String(shouldCollect);
-        log(`shouldCollectConsent (initialLayer != NONE): ${shouldCollect}`, shouldCollect === true ? 'warn' : 'data');
+    function setVerdict(index, verdict) {
+        const el = document.getElementById(`verdict-${index}`);
+        const card = document.getElementById(`card-${index}`);
+        if (el) { el.className = `verdict ${verdict}`; el.textContent = verdict.toUpperCase(); }
+        if (card) { card.className = `test-card ${verdict}`; }
     }
 
-    // ─── Reset ───
-    function resetSDK() {
-        UC_instance = null;
-        isInitialized = false;
-        setStatus('Not initialized');
-        setButtons(false);
-        document.getElementById('currentControllerId').textContent = '—';
-        document.getElementById('shouldCollect').textContent = '—';
-        document.getElementById('consentDisplay').style.display = 'none';
-        log('SDK reset. LocalStorage NOT cleared — use browser DevTools to clear if needed.', 'warn');
-        log('Ready for a new test cycle.', 'info');
+    function renderNetLog(index, entries) {
+        const el = document.getElementById(`netlog-${index}`);
+        if (!el) return;
+        if (entries.length === 0) { el.textContent = 'No consentState/consentsHistory requests captured.'; return; }
+        el.innerHTML = entries.map(e => {
+            const cls = e.ok === false || e.error ? 'error' : 'ok';
+            const status = e.error ? `ERR: ${e.error}` : `${e.status}`;
+            return `<div class="req ${cls}">${e.timestamp} ${status} ${e.url}?${e.params}</div>`;
+        }).join('');
+    }
+
+    // ─── Single test runner ───
+    async function runSingleTest(settingsId, index) {
+        const results = {
+            settingsId,
+            controllerIdA: null,
+            consentsA: null,
+            controllerIdB: null,
+            consentsB: null,
+            shouldCollectB: null,
+            initialLayerB: null,
+            errors: [],
+            verdict: 'unknown'
+        };
+
+        const net = createNetworkInterceptor();
+        net.install();
+
+        try {
+            setVerdict(index, 'running');
+
+            // ── Step 0: Clear storage ──
+            setStep(index, 0, 'running', 'Clearing localStorage...');
+            const removed = clearUCStorage();
+            localStorage.clear(); // nuclear option for clean test
+            setStep(index, 0, 'ok', 'Clear localStorage', `Removed ${removed} UC keys + full clear`);
+
+            // ── Step 1: Init SDK new session ──
+            setStep(index, 1, 'running', 'Initializing SDK (new session)...');
+            let ucA;
+            try {
+                ucA = new UC_SDK.default(settingsId);
+                var initA = await withTimeout(ucA.init(), 20000, 'init() timeout after 20s');
+                setStep(index, 1, 'ok', 'Init SDK (new session)', `initialLayer: ${initA.initialLayer}, variant: ${initA.variant}`);
+            } catch (err) {
+                setStep(index, 1, 'fail', 'Init SDK (new session)', err.message, 'error');
+                results.errors.push(`Step 1 init failed: ${err.message}`);
+                throw err;
+            }
+
+            // ── Step 2: Accept All ──
+            setStep(index, 2, 'running', 'Accepting all services...');
+            try {
+                ucA.acceptAllServices();
+                setStep(index, 2, 'ok', 'Accept All services');
+            } catch (err) {
+                setStep(index, 2, 'fail', 'Accept All services', err.message, 'error');
+                results.errors.push(`Step 2 acceptAll failed: ${err.message}`);
+                throw err;
+            }
+
+            // ── Step 3: Read Device A state ──
+            setStep(index, 3, 'running', 'Reading controllerID + consents...');
+            try {
+                const settingsA = ucA.getSettings();
+                results.controllerIdA = settingsA?.controllerId || null;
+                const servicesA = ucA.getServicesBaseInfo();
+                results.consentsA = servicesA.map(s => ({ name: s.name, id: s.id, consent: s.consent, isEssential: s.isEssential }));
+                const allTrue = results.consentsA.every(s => s.consent === true);
+                setStep(index, 3, allTrue ? 'ok' : 'warn',
+                    'Read controllerID + consents (Device A)',
+                    `controllerID: ${results.controllerIdA}\nServices: ${results.consentsA.map(s => `${s.name}=${s.consent}`).join(', ')}`
+                );
+                if (!results.controllerIdA) {
+                    results.errors.push('No controllerID returned after acceptAll');
+                    throw new Error('No controllerID');
+                }
+            } catch (err) {
+                if (!results.controllerIdA) {
+                    setStep(index, 3, 'fail', 'Read controllerID + consents (Device A)', err.message, 'error');
+                    results.errors.push(`Step 3 read state failed: ${err.message}`);
+                    throw err;
+                }
+            }
+
+            // ── Step 4: Clear storage + destroy SDK instance ──
+            setStep(index, 4, 'running', 'Clearing localStorage + resetting SDK...');
+            ucA = null;
+            localStorage.clear();
+            clearUCStorage();
+            // Small pause to ensure cleanup
+            await sleep(500);
+            setStep(index, 4, 'ok', 'Clear localStorage + reset SDK', 'Full localStorage cleared to simulate different device');
+
+            // ── Step 5: Init with controllerID (Device B) ──
+            setStep(index, 5, 'running', `Initializing SDK with controllerID: ${results.controllerIdA.substring(0, 16)}...`);
+            let ucB;
+            try {
+                ucB = new UC_SDK.default(settingsId, { controllerId: results.controllerIdA });
+                var initB = await withTimeout(ucB.init(), 20000, 'init() with controllerID timeout after 20s');
+                results.initialLayerB = initB.initialLayer;
+                setStep(index, 5, 'ok', 'Init SDK with controllerID (Device B restore)',
+                    `initialLayer: ${initB.initialLayer}, variant: ${initB.variant}`);
+            } catch (err) {
+                setStep(index, 5, 'fail', 'Init SDK with controllerID (Device B restore)', err.message, 'error');
+                results.errors.push(`Step 5 restore init failed: ${err.message}`);
+                throw err;
+            }
+
+            // ── Step 6: Verify consents restored ──
+            setStep(index, 6, 'running', 'Verifying consents match Device A...');
+            try {
+                const settingsB = ucB.getSettings();
+                results.controllerIdB = settingsB?.controllerId || null;
+                const servicesB = ucB.getServicesBaseInfo();
+                results.consentsB = servicesB.map(s => ({ name: s.name, id: s.id, consent: s.consent, isEssential: s.isEssential }));
+
+                // Compare
+                let mismatches = [];
+                for (const sA of results.consentsA) {
+                    const sB = results.consentsB.find(b => b.id === sA.id);
+                    if (!sB) {
+                        mismatches.push(`${sA.name}: missing on Device B`);
+                    } else if (sA.consent !== sB.consent) {
+                        mismatches.push(`${sA.name}: Device A=${sA.consent}, Device B=${sB.consent}`);
+                    }
+                }
+
+                if (mismatches.length === 0) {
+                    setStep(index, 6, 'ok', 'Verify restored consents match Device A',
+                        `All ${results.consentsB.length} services match. controllerID B: ${results.controllerIdB}`);
+                } else {
+                    setStep(index, 6, 'fail', 'Verify restored consents match Device A',
+                        `MISMATCHES:\n${mismatches.join('\n')}`, 'error');
+                    results.errors.push(`Consent mismatch: ${mismatches.join('; ')}`);
+                }
+            } catch (err) {
+                setStep(index, 6, 'fail', 'Verify restored consents match Device A', err.message, 'error');
+                results.errors.push(`Step 6 verify failed: ${err.message}`);
+            }
+
+            // ── Step 7: Check shouldCollectConsent ──
+            const shouldCollect = results.initialLayerB !== undefined && results.initialLayerB !== 2; // 2 = NONE
+            results.shouldCollectB = shouldCollect;
+
+            if (!shouldCollect) {
+                setStep(index, 7, 'ok', 'shouldCollectConsent == false',
+                    `initialLayer: ${results.initialLayerB} (NONE) — banner will NOT show. CDCS working correctly.`);
+            } else {
+                const layerNames = { 0: 'FIRST_LAYER', 1: 'SECOND_LAYER', 2: 'NONE' };
+                const layerName = layerNames[results.initialLayerB] || results.initialLayerB;
+                setStep(index, 7, 'fail', 'shouldCollectConsent should be false but is TRUE',
+                    `initialLayer: ${results.initialLayerB} (${layerName}) — banner WILL show again. CDCS NOT restoring consent properly.`, 'error');
+                results.errors.push(`shouldCollectConsent=true after restore (initialLayer=${results.initialLayerB}/${layerName})`);
+            }
+
+            // ── Cleanup SDK ──
+            ucB = null;
+
+        } catch (err) {
+            // Already logged per step
+        }
+
+        net.restore();
+        renderNetLog(index, net.getLog());
+
+        // Check for 404s on consentState
+        const failed404 = net.getLog().filter(e => e.status === 404 && e.url.includes('consentState'));
+        if (failed404.length > 0) {
+            results.errors.push(`consentState returned 404 — CDCS endpoint not available for this settingsId`);
+        }
+
+        // Final verdict
+        if (results.errors.length === 0) {
+            results.verdict = 'pass';
+        } else if (results.errors.some(e => e.includes('404') || e.includes('shouldCollectConsent') || e.includes('mismatch'))) {
+            results.verdict = 'fail';
+        } else {
+            results.verdict = 'warn';
+        }
+
+        setVerdict(index, results.verdict);
+        return results;
+    }
+
+    // ─── Run all tests sequentially ───
+    async function runAllTests() {
+        const btn = document.getElementById('btnRun');
+        const statusEl = document.getElementById('globalStatus');
+        btn.disabled = true;
+
+        const lines = document.getElementById('settingsInput').value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length === 0) {
+            statusEl.textContent = 'No Settings IDs entered.';
+            btn.disabled = false;
+            return;
+        }
+
+        // Load SDK first
+        statusEl.textContent = 'Loading Browser SDK...';
+        try {
+            await loadSDK();
+        } catch (err) {
+            statusEl.textContent = 'FATAL: Could not load SDK. Open this file in Chrome/Firefox directly (not in an embedded preview). Disable adblockers for app.usercentrics.eu.';
+            btn.disabled = false;
+            return;
+        }
+
+        // Create cards
+        const resultsArea = document.getElementById('resultsArea');
+        resultsArea.innerHTML = '';
+        for (let i = 0; i < lines.length; i++) {
+            resultsArea.appendChild(createTestCard(lines[i], i));
+        }
+
+        // Run sequentially
+        const allResults = [];
+        for (let i = 0; i < lines.length; i++) {
+            statusEl.textContent = `Testing ${i + 1}/${lines.length}: ${lines[i]}`;
+            const r = await runSingleTest(lines[i], i);
+            allResults.push(r);
+            // Pause between tests
+            if (i < lines.length - 1) await sleep(1000);
+        }
+
+        // Summary
+        const passed = allResults.filter(r => r.verdict === 'pass').length;
+        const failed = allResults.filter(r => r.verdict === 'fail').length;
+        const warns = allResults.filter(r => r.verdict === 'warn').length;
+        statusEl.textContent = `Done: ${passed} passed, ${failed} failed, ${warns} warnings`;
+
+        renderSummary(allResults);
+        btn.disabled = false;
+    }
+
+    function renderSummary(results) {
+        const area = document.getElementById('summaryArea');
+
+        let report = `CDCS TEST REPORT — ${new Date().toISOString()}\n`;
+        report += `${'═'.repeat(60)}\n\n`;
+
+        for (const r of results) {
+            const icon = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' : '⚠';
+            report += `${icon} ${r.settingsId}  →  ${r.verdict.toUpperCase()}\n`;
+            if (r.controllerIdA) report += `  controllerID (A): ${r.controllerIdA}\n`;
+            if (r.controllerIdB) report += `  controllerID (B): ${r.controllerIdB}\n`;
+            if (r.controllerIdA && r.controllerIdB) {
+                report += `  controllerID match: ${r.controllerIdA === r.controllerIdB ? 'YES' : 'NO ← PROBLEM'}\n`;
+            }
+            report += `  initialLayer on restore: ${r.initialLayerB}\n`;
+            report += `  shouldCollectConsent on restore: ${r.shouldCollectB}\n`;
+            if (r.consentsA) {
+                report += `  Device A consents: ${r.consentsA.map(s => `${s.name}=${s.consent}`).join(', ')}\n`;
+            }
+            if (r.consentsB) {
+                report += `  Device B consents: ${r.consentsB.map(s => `${s.name}=${s.consent}`).join(', ')}\n`;
+            }
+            if (r.errors.length > 0) {
+                report += `  ERRORS:\n`;
+                r.errors.forEach(e => { report += `    → ${e}\n`; });
+            }
+            report += '\n';
+        }
+
+        report += `${'═'.repeat(60)}\n`;
+        report += `SUMMARY: ${results.filter(r => r.verdict === 'pass').length} PASS / ${results.filter(r => r.verdict === 'fail').length} FAIL / ${results.filter(r => r.verdict === 'warn').length} WARN\n`;
+
+        const failedIds = results.filter(r => r.verdict === 'fail').map(r => r.settingsId);
+        if (failedIds.length > 0) {
+            report += `\nFAILED IDs: ${failedIds.join(', ')}\n`;
+            report += `\nLikely cause: consentState endpoint returns 404 for these settingsIds.\n`;
+            report += `CDCS may not be fully activated at the backend/API level,\n`;
+            report += `even if the toggle shows enabled in the Admin Interface / GraphQL.\n`;
+        }
+
+        area.innerHTML = `
+            <div class="summary-card">
+                <h2>Test Report (copy-pasteable)</h2>
+                <pre>${esc(report)}</pre>
+            </div>
+        `;
+    }
+
+    // ─── Helpers ───
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function withTimeout(promise, ms, msg) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms))
+        ]);
     }
 </script>
 
