@@ -1,1 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDCS Test v3 — Cross-Device Browser UI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
+        :root {
+            --bg: #0a0c10; --surface: #13161c; --surface-2: #1a1e26; --border: #262c36;
+            --text: #d4dae4; --text-dim: #6b7588;
+            --blue: #4da0ff; --blue-bg: rgba(77,160,255,0.08);
+            --green: #34d399; --green-bg: rgba(52,211,153,0.08);
+            --red: #f87171; --red-bg: rgba(248,113,113,0.08);
+            --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.08);
+            --mono: 'IBM Plex Mono', monospace; --sans: 'Outfit', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 24px; max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .version { font-family: var(--mono); font-size: 11px; color: var(--text-dim); background: var(--surface-2); padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+        .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; line-height: 1.6; margin-top: 6px; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+        .card h2 { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+        label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-family: var(--mono); }
+        input { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; margin-bottom: 10px; }
+        input:focus { border-color: var(--blue); }
+        input::placeholder { color: #3a4050; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: var(--blue); color: var(--bg); }
+        .btn-primary:hover { opacity: 0.85; }
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+        .log { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; max-height: 600px; overflow-y: auto; margin-top: 12px; }
+        .log-entry { padding: 6px 14px; font-family: var(--mono); font-size: 11px; line-height: 1.6; border-bottom: 1px solid rgba(38,44,54,0.4); word-break: break-word; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-entry.ok { color: var(--green); background: var(--green-bg); }
+        .log-entry.fail { color: var(--red); background: var(--red-bg); }
+        .log-entry.warn { color: var(--amber); background: var(--amber-bg); }
+        .log-entry.info { color: var(--blue); }
+        .log-entry .ts { color: #3a4050; margin-right: 6px; }
+        .summary { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 16px; }
+        .summary pre { font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+    </style>
+</head>
+<body>
 
+<div style="display:flex;align-items:baseline;">
+    <h1>CDCS Test v3</h1>
+    <span class="version">CMP V2 Browser UI — Cross Settings IDs</span>
+</div>
+<p class="subtitle">
+    Tests CDCS via <strong>data-controller-id</strong> between two different Settings IDs using the Browser UI.<br>
+    Phase A: give consent on Settings ID A → capture controllerID.<br>
+    Phase B: load Settings ID B with data-controller-id from A → check if consent is restored.
+</p>
+
+<div class="card">
+    <h2>Configuration</h2>
+    <div class="row">
+        <div>
+            <label>Device A — Settings ID (consent source)</label>
+            <input id="sidA" value="RISEiwKdT7LE2_" />
+        </div>
+        <div>
+            <label>Device B — Settings ID (restore target)</label>
+            <input id="sidB" value="UEG735Q_QYDs-R" />
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" id="btnRun" onclick="runTest()">Run Test</button>
+        <span id="statusMsg" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);"></span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Test Log</h2>
+    <div class="log" id="logArea">
+        <div class="log-entry" style="color:var(--text-dim);">Waiting to start...</div>
+    </div>
+</div>
+
+<div id="summaryArea"></div>
+
+<iframe id="testFrame" style="width:1px;height:1px;position:fixed;left:-100px;top:-100px;border:none;"></iframe>
+
+<script>
+    function log(msg, type = '') {
+        const area = document.getElementById('logArea');
+        const ph = area.querySelector('.log-entry[style]');
+        if (ph) ph.remove();
+        const div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        const ts = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        div.innerHTML = `<span class="ts">${ts}</span>${esc(msg)}`;
+        area.appendChild(div);
+        area.scrollTop = area.scrollHeight;
+    }
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function runInIframe(html, timeoutMs = 35000) {
+        return new Promise((resolve, reject) => {
+            const iframe = document.getElementById('testFrame');
+            const timer = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs/1000}s`)), timeoutMs);
+            const handler = (event) => {
+                if (event.source === iframe.contentWindow) {
+                    window.removeEventListener('message', handler);
+                    clearTimeout(timer);
+                    resolve(event.data);
+                }
+            };
+            window.addEventListener('message', handler);
+            iframe.srcdoc = html;
+        });
+    }
+
+    function buildPhaseA(sid) {
+        return `<!DOCTYPE html><html><head>
+            <script id="usercentrics-cmp" data-settings-id="${sid}"
+                src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
+        </head><body><script>
+            window.addEventListener('UC_UI_INITIALIZED', function() {
+                try {
+                    UC_UI.acceptAllConsents();
+                    setTimeout(function() {
+                        var cid = typeof UC_UI.getControllerId === 'function' ? UC_UI.getControllerId() : null;
+                        var services = [];
+                        if (typeof UC_UI.getServicesBaseInfo === 'function') {
+                            services = UC_UI.getServicesBaseInfo().map(function(s) {
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            });
+                        }
+                        window.parent.postMessage({ phase: 'A', success: true, controllerId: cid, consents: services }, '*');
+                    }, 3000);
+                } catch(e) {
+                    window.parent.postMessage({ phase: 'A', success: false, error: e.message }, '*');
+                }
+            });
+            setTimeout(function() { if (!window.UC_UI) window.parent.postMessage({ phase: 'A', success: false, error: 'UC_UI timeout' }, '*'); }, 30000);
+        <\/script></body></html>`;
+    }
+
+    function buildPhaseB(sid, cid) {
+        return `<!DOCTYPE html><html><head>
+            <script id="usercentrics-cmp" data-settings-id="${sid}" data-controller-id="${cid}"
+                src="https://app.usercentrics.eu/browser-ui/latest/loader.js" async><\/script>
+        </head><body><script>
+            var netLog = [];
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
+                if (url.includes('consent') || url.includes('Consent')) {
+                    var e = { url: url, status: null };
+                    netLog.push(e);
+                    return origFetch.apply(this, arguments).then(function(r) { e.status = r.status; return r; }).catch(function(err) { e.status = 'ERR'; throw err; });
+                }
+                return origFetch.apply(this, arguments);
+            };
+            var origXHR = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(m, url) {
+                this._url = url;
+                if (url && (url.includes('consent') || url.includes('Consent'))) {
+                    var e = { url: url, status: null };
+                    netLog.push(e);
+                    this.addEventListener('load', function() { e.status = this.status; });
+                }
+                return origXHR.apply(this, arguments);
+            };
+
+            window.addEventListener('UC_UI_INITIALIZED', function() {
+                setTimeout(function() {
+                    try {
+                        var result = { phase: 'B', success: true };
+                        result.isConsentRequired = typeof UC_UI.isConsentRequired === 'function' ? UC_UI.isConsentRequired() : 'N/A';
+                        result.controllerId = typeof UC_UI.getControllerId === 'function' ? UC_UI.getControllerId() : null;
+                        if (typeof UC_UI.getServicesBaseInfo === 'function') {
+                            result.consents = UC_UI.getServicesBaseInfo().map(function(s) {
+                                return { name: s.name, id: s.id, consent: s.consent && s.consent.status !== undefined ? s.consent.status : !!s.consent };
+                            });
+                        }
+                        result.networkLog = netLog;
+                        window.parent.postMessage(result, '*');
+                    } catch(e) {
+                        window.parent.postMessage({ phase: 'B', success: false, error: e.message, networkLog: netLog }, '*');
+                    }
+                }, 4000);
+            });
+            setTimeout(function() { if (!window.UC_UI) window.parent.postMessage({ phase: 'B', success: false, error: 'timeout', networkLog: netLog }, '*'); }, 30000);
+        <\/script></body></html>`;
+    }
+
+    async function runTest() {
+        const btn = document.getElementById('btnRun');
+        const status = document.getElementById('statusMsg');
+        btn.disabled = true;
+        document.getElementById('logArea').innerHTML = '';
+        document.getElementById('summaryArea').innerHTML = '';
+
+        const sidA = document.getElementById('sidA').value.trim();
+        const sidB = document.getElementById('sidB').value.trim();
+        if (!sidA || !sidB) { log('Both Settings IDs required', 'fail'); btn.disabled = false; return; }
+
+        const report = { sidA, sidB, timestamp: new Date().toISOString(), phaseA: null, phaseB: null };
+
+        // Phase A
+        log(`═══ PHASE A: Give consent on ${sidA} ═══`, 'info');
+        status.textContent = 'Phase A...';
+        try {
+            report.phaseA = await runInIframe(buildPhaseA(sidA));
+            if (report.phaseA.success && report.phaseA.controllerId) {
+                log(`Phase A OK — controllerID: ${report.phaseA.controllerId}`, 'ok');
+                log(`Consents (${report.phaseA.consents.length} services): ${report.phaseA.consents.map(s => s.name + '=' + s.consent).join(', ')}`);
+            } else {
+                log(`Phase A FAILED: ${report.phaseA.error || 'no controllerID'}`, 'fail');
+                btn.disabled = false; return;
+            }
+        } catch (e) {
+            log(`Phase A ERROR: ${e.message}`, 'fail');
+            btn.disabled = false; return;
+        }
+
+        const cid = report.phaseA.controllerId;
+        await sleep(2000);
+
+        // Phase B
+        log('', '');
+        log(`═══ PHASE B: Restore on ${sidB} with data-controller-id ═══`, 'info');
+        log(`Using controllerID from Phase A: ${cid}`);
+        if (sidA !== sidB) {
+            log('NOTE: Settings IDs are DIFFERENT — testing cross-settings-id CDCS', 'warn');
+        } else {
+            log('NOTE: Same Settings ID — testing same-config CDCS', '');
+        }
+        status.textContent = 'Phase B...';
+
+        try {
+            report.phaseB = await runInIframe(buildPhaseB(sidB, cid));
+            if (report.phaseB.success) {
+                log(`Phase B — isConsentRequired: ${report.phaseB.isConsentRequired}`, report.phaseB.isConsentRequired === false ? 'ok' : 'fail');
+                log(`Phase B — controllerID: ${report.phaseB.controllerId || '—'}`);
+
+                if (report.phaseB.consents) {
+                    const allTrue = report.phaseB.consents.every(s => s.consent === true);
+                    log(`Phase B consents (${report.phaseB.consents.length} services): ${report.phaseB.consents.map(s => s.name + '=' + s.consent).join(', ')}`, allTrue ? 'ok' : 'warn');
+                }
+
+                if (report.phaseB.networkLog && report.phaseB.networkLog.length > 0) {
+                    report.phaseB.networkLog.forEach(n => {
+                        const short = n.url.split('?')[0];
+                        log(`Network: [${n.status}] ${short}`, n.status === 404 ? 'fail' : '');
+                    });
+                }
+
+                if (report.phaseB.isConsentRequired === false) {
+                    log('✓ CDCS WORKING — banner will NOT show on Device B', 'ok');
+                } else {
+                    log('✗ CDCS NOT WORKING — banner WILL show on Device B', 'fail');
+                }
+            } else {
+                log(`Phase B FAILED: ${report.phaseB.error}`, 'fail');
+            }
+        } catch (e) {
+            log(`Phase B ERROR: ${e.message}`, 'fail');
+            report.phaseB = { success: false, error: e.message };
+        }
+
+        status.textContent = 'Done.';
+        renderSummary(report);
+        btn.disabled = false;
+    }
+
+    function renderSummary(r) {
+        let t = `CDCS CROSS-SETTINGS-ID TEST REPORT\n`;
+        t += `Generated: ${r.timestamp}\n`;
+        t += `Settings A: ${r.sidA} → Settings B: ${r.sidB}\n`;
+        t += `Same Settings ID: ${r.sidA === r.sidB ? 'YES' : 'NO'}\n`;
+        t += `Method: data-controller-id on Browser UI script tag\n`;
+        t += `${'═'.repeat(60)}\n\n`;
+
+        t += `Phase A (consent source):\n`;
+        t += `  controllerID: ${r.phaseA?.controllerId || '—'}\n`;
+        if (r.phaseA?.consents) {
+            t += `  services: ${r.phaseA.consents.length}\n`;
+            t += `  all consents true: ${r.phaseA.consents.every(s => s.consent === true)}\n`;
+        }
+
+        t += `\nPhase B (restore target):\n`;
+        if (r.phaseB?.success) {
+            t += `  isConsentRequired: ${r.phaseB.isConsentRequired}\n`;
+            t += `  controllerID: ${r.phaseB.controllerId || '—'}\n`;
+            t += `  controllerID preserved: ${r.phaseA?.controllerId === r.phaseB?.controllerId ? 'YES' : 'NO'}\n`;
+            if (r.phaseB.consents) {
+                t += `  services: ${r.phaseB.consents.length}\n`;
+                t += `  all consents true: ${r.phaseB.consents.every(s => s.consent === true)}\n`;
+                const falseOnes = r.phaseB.consents.filter(s => !s.consent);
+                if (falseOnes.length) {
+                    t += `  services with false consent:\n`;
+                    falseOnes.forEach(s => { t += `    ${s.name} (${s.id})\n`; });
+                }
+            }
+            if (r.phaseB.networkLog) {
+                const fails = r.phaseB.networkLog.filter(n => n.status === 404 || String(n.status).startsWith('ERR'));
+                if (fails.length) {
+                    t += `  failed network requests:\n`;
+                    fails.forEach(f => { t += `    [${f.status}] ${f.url.split('?')[0]}\n`; });
+                }
+            }
+        } else {
+            t += `  ERROR: ${r.phaseB?.error || 'unknown'}\n`;
+        }
+
+        t += `\n${'═'.repeat(60)}\n`;
+        const pass = r.phaseB?.isConsentRequired === false;
+        t += `VERDICT: ${pass ? '✓ PASS — CDCS works between these Settings IDs' : '✗ FAIL — CDCS does not work between these Settings IDs'}\n`;
+
+        document.getElementById('summaryArea').innerHTML = `<div class="summary"><h2 style="font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Test Report</h2><pre>${esc(t)}</pre></div>`;
+    }
+</script>
+</body>
+</html>
